@@ -96,7 +96,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["square", "portrait", "landscape"],
     has_variable_data: false,
-    image_url: "https://images.unsplash.com/photo-1572375992501-4b0892d50c69?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/stickers.svg",
     is_active: true,
   },
   {
@@ -124,7 +124,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["BibNumber", "AthleteName", "Category", "EmergencyContact", "Barcode"],
-    image_url: "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/race-bib.svg",
     is_active: true,
   },
   {
@@ -152,7 +152,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["PlateNumber", "RiderName", "Team", "Class"],
-    image_url: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/mtb-board.svg",
     is_active: true,
   },
   {
@@ -180,7 +180,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["landscape", "square"],
     has_variable_data: false,
-    image_url: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/stamp.svg",
     is_active: true,
   },
   {
@@ -209,7 +209,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["RecipientName", "AwardTitle", "Date", "ClubName"],
-    image_url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/trophy.svg",
     is_active: true,
   },
   {
@@ -237,7 +237,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["square", "portrait", "landscape"],
     has_variable_data: false,
-    image_url: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80",
+    image_url: "/gallery/laser-cut.svg",
     is_active: true,
   },
 ];

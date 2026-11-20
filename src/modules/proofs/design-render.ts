@@ -95,7 +95,7 @@ export function renderDesignFragment(state: SerializedCanvasState): string {
       const href = safeImageHref(src.src);
       if (href) {
         parts.push(
-          `<image x="${el.xMm}" y="${el.yMm}" width="${el.widthMm}" height="${el.heightMm}" preserveAspectRatio="none" href="${href}"${opacity}${transform}/>`
+          `<image x="${el.xMm}" y="${el.yMm}" width="${el.widthMm}" height="${el.heightMm}" preserveAspectRatio="xMidYMid meet" href="${href}"${opacity}${transform}/>`
         );
       }
     }

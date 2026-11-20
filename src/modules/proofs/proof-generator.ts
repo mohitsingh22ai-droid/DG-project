@@ -1,91 +1,12 @@
 import { escapeXml } from "./design-render";
-import { ProofRecord, ProofMetadata, ApprovalGateCheckResult } from "./types";
-import { ProofStatus } from "@/types/database";
+import { ProofMetadata } from "./types";
 
-/**
- * The Approval Gate Engine (§ 08 & § 11 Capability 02):
- * Print-ready files unlock ONLY once a proof is approved.
- * In the admin panel, the download buttons for 300 DPI production files
- * remain strictly locked/disabled until status === 'approved'.
+/*
+ * Proof artwork (PRD § 08). The approval rules themselves live server-side:
+ *   - drafts/draft-store.ts          approve / request changes on a job before payment
+ *   - app/api/proofs/[id]/*          approve / request changes on a paid order
+ *   - orders/order-store.ts          checkReadyForProduction(): the production-file gate
  */
-export function checkApprovalGate(status: ProofStatus): ApprovalGateCheckResult {
-  if (status === "approved") {
-    return {
-      isUnlocked: true,
-      status: "approved",
-    };
-  }
-
-  if (status === "changes_requested") {
-    return {
-      isUnlocked: false,
-      status: "changes_requested",
-      reason: "Production Locked: Customer requested artwork revisions (Awaiting updated proof v+1).",
-    };
-  }
-
-  return {
-    isUnlocked: false,
-    status: "pending_review",
-    reason: "Production Locked: Awaiting customer proof inspection and formal approval (§ 08 Gate).",
-  };
-}
-
-/**
- * State Transition: Approve Proof (§ 08)
- * Records who approved which version and when.
- */
-export function processProofApproval(
-  proof: ProofRecord,
-  approvedByEmail: string
-): ProofRecord {
-  return {
-    ...proof,
-    status: "approved",
-    approvedBy: approvedByEmail,
-    approvedAt: new Date().toISOString(),
-  };
-}
-
-/**
- * State Transition: Request Changes (§ 08)
- * Captures revision notes and spawns next revision version (v+1).
- */
-export function processProofRevisionRequest(
-  currentProof: ProofRecord,
-  feedback: string
-): { updatedCurrent: ProofRecord; nextRevision: ProofRecord } {
-  const updatedCurrent: ProofRecord = {
-    ...currentProof,
-    status: "changes_requested",
-    customerFeedback: feedback,
-  };
-
-  const nextVersionNumber = currentProof.version + 1;
-
-  const nextRevision: ProofRecord = {
-    id: `prf-${currentProof.orderId}-v${nextVersionNumber}`,
-    orderId: currentProof.orderId,
-    orderItemId: currentProof.orderItemId,
-    version: nextVersionNumber,
-    status: "pending_review",
-    previewUrl: currentProof.previewUrl,
-    metadata: {
-      ...currentProof.metadata,
-      version: nextVersionNumber,
-      createdAt: new Date().toISOString(),
-    },
-    customerFeedback: null,
-    approvedBy: null,
-    approvedAt: null,
-    createdAt: new Date().toISOString(),
-  };
-
-  return {
-    updatedCurrent,
-    nextRevision,
-  };
-}
 
 /**
  * Builds the customer proof (§ 08): the actual artwork drawn at its true

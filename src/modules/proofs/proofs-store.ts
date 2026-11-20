@@ -22,10 +22,33 @@ interface ProofRow {
   approved_by_email: string | null;
   approved_at: string | null;
   created_at: string;
-  drafts: { customer_id: string | null; orders: { order_number: string } | null } | null;
+  drafts: {
+    customer_id: string | null;
+    options: { widthMm?: number; heightMm?: number; bleedMm?: number; materialId?: string } | null;
+    products: { name: string; default_bleed_mm: number; allowed_materials: Array<{ id: string; name: string }> | null } | null;
+    orders: { order_number: string } | null;
+  } | null;
 }
 
-const PROOF_COLUMNS = "*, drafts!inner(customer_id, orders:orders!drafts_order_fk(order_number))";
+// Each proof row joins its job (owner, print options), the product and, once paid, the order number.
+const PROOF_COLUMNS =
+  "*, drafts!inner(customer_id, options, products(name, default_bleed_mm, allowed_materials), orders:orders!drafts_order_fk(order_number))";
+
+/** The real print specification of the job a proof belongs to (shown in the proof dialog). */
+function proofSpec(row: ProofRow): Proof["spec"] {
+  const options = row.drafts?.options;
+  const product = row.drafts?.products;
+  if (!options?.widthMm || !options?.heightMm) return undefined;
+  const materials = product?.allowed_materials ?? [];
+  const material = materials.find((m) => m.id === options.materialId) ?? materials[0];
+  return {
+    productName: product?.name,
+    widthMm: options.widthMm,
+    heightMm: options.heightMm,
+    bleedMm: options.bleedMm ?? product?.default_bleed_mm,
+    materialName: material?.name,
+  };
+}
 
 function toProof(row: ProofRow): Proof {
   return {
@@ -33,12 +56,13 @@ function toProof(row: ProofRow): Proof {
     order_item_id: row.draft_id,
     order_id: row.drafts?.orders?.order_number ?? row.draft_id,
     version_number: row.version,
-    status: (row.status === "superseded" ? "changes_requested" : row.status) as ProofStatus,
+    status: row.status as ProofStatus,
     watermarked_preview_url: row.rendered_url,
     customer_feedback: row.feedback,
     approved_by: row.approved_by_email,
     approved_at: row.approved_at,
     created_at: row.created_at,
+    spec: proofSpec(row),
   };
 }
 
@@ -92,4 +116,32 @@ export async function supersedeEarlierProofs(draftId: string, latestVersion: num
     await db().from("draft_proofs").update({ status: "superseded" }).eq("draft_id", draftId).lt("version", latestVersion).neq("status", "approved"),
     "Supersede proofs"
   );
+}
+
+export interface ProofLogEntry {
+  version: number;
+  status: ProofStatus | "superseded";
+  feedback: string | null;
+  approvedByEmail: string | null;
+  approvedAt: string | null;
+  createdAt: string;
+  previewUrl: string;
+}
+
+/** Every proof version of a draft, oldest first: the approval/revision log. */
+export async function getProofLogForDraft(draftId: string): Promise<ProofLogEntry[]> {
+  if (!UUID_RE.test(draftId)) return [];
+  const rows = unwrap(
+    await db().from("draft_proofs").select("version, status, feedback, approved_by_email, approved_at, created_at, rendered_url").eq("draft_id", draftId).order("version"),
+    "Load proof log"
+  ) as { version: number; status: ProofLogEntry["status"]; feedback: string | null; approved_by_email: string | null; approved_at: string | null; created_at: string; rendered_url: string }[];
+  return rows.map((r) => ({
+    version: r.version,
+    status: r.status,
+    feedback: r.feedback,
+    approvedByEmail: r.approved_by_email,
+    approvedAt: r.approved_at,
+    createdAt: r.created_at,
+    previewUrl: r.rendered_url,
+  }));
 }

@@ -159,7 +159,7 @@ export interface OrderItem {
   created_at: string;
 }
 
-export type ProofStatus = "pending_review" | "approved" | "changes_requested";
+export type ProofStatus = "pending_review" | "approved" | "changes_requested" | "superseded";
 
 export interface Proof {
   id: string;
@@ -172,6 +172,14 @@ export interface Proof {
   approved_by?: string | null;
   approved_at?: string | null;
   created_at: string;
+  /** Print specification of the job this proof belongs to, when known. */
+  spec?: {
+    productName?: string;
+    widthMm: number;
+    heightMm: number;
+    bleedMm?: number;
+    materialName?: string;
+  };
 }
 
 export interface ProductionFile {

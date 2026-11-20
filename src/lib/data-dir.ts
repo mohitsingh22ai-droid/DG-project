@@ -1,15 +1,15 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 
 /**
- * Resolves the on-disk location of an interim JSON store file.
+ * Resolves the on-disk location of a small local file. All application data lives
+ * in Supabase; the only remaining user is the email provider's test-mode capture
+ * file (emails recorded instead of sent when EMAIL_PROVIDER=test).
  *
- * The stores live in a git-ignored directory (default `.data/`) so that running
- * the app or the test suites never modifies tracked files. Tests point
- * `W2P_DATA_DIR` at their own directory (`.data-test`, `.data-e2e`) to stay
- * isolated from local development data.
- *
- * NOTE: interim persistence only. Phase 1 replaces these stores with Supabase.
+ * Files go in a git-ignored directory (default `.data/`); tests point
+ * `W2P_DATA_DIR` at their own directory to stay isolated. On read-only hosts
+ * (Vercel) the OS temp directory is used instead.
  *
  * Stores import this module by relative path (not "@/lib/...") so Playwright specs
  * that load a store dynamically can still resolve it.
@@ -19,8 +19,11 @@ export function dataFile(fileName: string): string {
     ? path.resolve(process.env.W2P_DATA_DIR)
     : path.join(process.cwd(), ".data");
 
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  try {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  } catch {
+    // Read-only filesystem (e.g. serverless): fall back to the OS temp directory.
+    return path.join(os.tmpdir(), fileName);
   }
 
   return path.join(dir, fileName);

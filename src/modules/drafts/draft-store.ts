@@ -268,9 +268,14 @@ export async function updateDraft(
     updates: Object.keys(updates),
   });
 
-  // Generate the first stored proof when the draft first reaches proof review.
-  if ((actionLabel === "PROOF_GENERATED" || updates.status === "proof_pending") && draft.proofs.length === 0) {
-    const updated = (await getDraft(draftId))!;
+  // (Re)render the proof for the current version when the draft enters review, or
+  // when its artwork changes while under review, so the stored proof always shows
+  // the latest artwork.
+  const updated = (await getDraft(draftId))!;
+  const artworkChanged =
+    updates.designJson !== undefined || updates.uploadedFileRef !== undefined || updates.csvFileRef !== undefined;
+  const hasCurrentProof = updated.proofs.some((p) => p.version === updated.proofVersion);
+  if (updated.status === "proof_pending" && (!hasCurrentProof || artworkChanged)) {
     const proof = await generateDraftProof(updated, updated.proofVersion || 1);
     await saveProofRecord(draftId, proof);
   }
@@ -486,9 +491,11 @@ export async function calculateDraftPrice(draft: JobDraft, placeOfSupply?: strin
 }
 
 /** API view of a draft: stored proof references become short-lived URLs. */
-export async function presentDraft(draft: JobDraft): Promise<JobDraft> {
+export async function presentDraft(draft: JobDraft): Promise<JobDraft & { artworkUrl: string | null }> {
   const proofs = await Promise.all(
     draft.proofs.map(async (p) => ({ ...p, renderedUrl: await resolveStoredUrl(p.renderedUrl) }))
   );
-  return { ...draft, proofs };
+  // Short-lived link to the customer's own uploaded file (callers have already checked ownership).
+  const artworkUrl = draft.uploadedFileRef ? await resolveStoredUrl(`${STORAGE_PREFIX}artwork/${draft.uploadedFileRef}`) : null;
+  return { ...draft, proofs, artworkUrl };
 }

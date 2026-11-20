@@ -25,9 +25,3 @@ export interface ProofRecord {
   approvedAt?: string | null;
   createdAt: string;
 }
-
-export interface ApprovalGateCheckResult {
-  isUnlocked: boolean;
-  status: ProofStatus;
-  reason?: string;
-}

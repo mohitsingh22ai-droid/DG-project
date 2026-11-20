@@ -46,7 +46,9 @@ function KonvaURLImage({
   element,
   onSelect,
   onChange,
+  clamp,
 }: {
+  clamp: (node: Konva.Node) => void;
   element: ImageCanvasElement;
   isSelected: boolean;
   onSelect: () => void;
@@ -69,6 +71,7 @@ function KonvaURLImage({
       draggable={!element.isLocked}
       onClick={onSelect}
       onTap={onSelect}
+      onDragMove={(e) => clamp(e.target)}
       onDragEnd={(e) => {
         onChange({
           x: e.target.x(),
@@ -82,11 +85,14 @@ function KonvaURLImage({
         const scaleY = node.scaleY();
         node.scaleX(1);
         node.scaleY(1);
+        node.width(Math.max(10, node.width() * scaleX));
+        node.height(Math.max(10, node.height() * scaleY));
+        clamp(node);
         onChange({
           x: node.x(),
           y: node.y(),
-          width: Math.max(10, node.width() * scaleX),
-          height: Math.max(10, node.height() * scaleY),
+          width: node.width(),
+          height: node.height(),
           rotation: node.rotation(),
         });
       }}
@@ -123,6 +129,21 @@ export function CanvasStage({
     trRef.current.nodes([]);
     trRef.current.getLayer()?.batchDraw();
   }, [selectedId, stageRef, elements]);
+
+  /** Pushes a node back inside the safe area (text and artwork must not reach the trim). */
+  const clampToSafe = (node: Konva.Node) => {
+    const layer = node.getLayer();
+    if (!layer) return;
+    const box = node.getClientRect({ relativeTo: layer, skipShadow: true, skipStroke: true });
+    const left = bounds.safeOffsetX;
+    const top = bounds.safeOffsetY;
+    const right = left + bounds.safeWidth;
+    const bottom = top + bounds.safeHeight;
+    const dx = box.width >= bounds.safeWidth ? left - box.x : box.x < left ? left - box.x : box.x + box.width > right ? right - (box.x + box.width) : 0;
+    const dy = box.height >= bounds.safeHeight ? top - box.y : box.y < top ? top - box.y : box.y + box.height > bottom ? bottom - (box.y + box.height) : 0;
+    if (dx || dy) node.position({ x: node.x() + dx, y: node.y() + dy });
+  };
+  const onDragMove = (e: Konva.KonvaEventObject<DragEvent>) => clampToSafe(e.target);
 
   const handleElementUpdate = (id: string, newAttrs: Partial<CanvasElement>) => {
     const updated = elements.map((el) => (el.id === id ? ({ ...el, ...newAttrs } as CanvasElement) : el));
@@ -181,6 +202,7 @@ export function CanvasStage({
                   draggable={!textEl.isLocked}
                   onClick={() => onSelect(textEl.id)}
                   onTap={() => onSelect(textEl.id)}
+                  onDragMove={onDragMove}
                   onDragEnd={(e) => {
                     handleElementUpdate(textEl.id, {
                       x: e.target.x(),
@@ -189,6 +211,10 @@ export function CanvasStage({
                   }}
                   onTransformEnd={(e) => {
                     const node = e.target;
+                    // Text is sized by its font size, not by stretching.
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    clampToSafe(node);
                     handleElementUpdate(textEl.id, {
                       x: node.x(),
                       y: node.y(),
@@ -207,6 +233,7 @@ export function CanvasStage({
                   isSelected={isSelected}
                   onSelect={() => onSelect(el.id)}
                   onChange={(attrs) => handleElementUpdate(el.id, attrs)}
+                  clamp={clampToSafe}
                 />
               );
             }
@@ -230,6 +257,7 @@ export function CanvasStage({
                   draggable={!rectEl.isLocked}
                   onClick={() => onSelect(rectEl.id)}
                   onTap={() => onSelect(rectEl.id)}
+                  onDragMove={onDragMove}
                   onDragEnd={(e) => {
                     handleElementUpdate(rectEl.id, {
                       x: e.target.x(),
@@ -242,11 +270,14 @@ export function CanvasStage({
                     const scaleY = node.scaleY();
                     node.scaleX(1);
                     node.scaleY(1);
+                    node.width(Math.max(5, node.width() * scaleX));
+                    node.height(Math.max(5, node.height() * scaleY));
+                    clampToSafe(node);
                     handleElementUpdate(rectEl.id, {
                       x: node.x(),
                       y: node.y(),
-                      width: Math.max(5, node.width() * scaleX),
-                      height: Math.max(5, node.height() * scaleY),
+                      width: node.width(),
+                      height: node.height(),
                       rotation: node.rotation(),
                     });
                   }}
@@ -264,9 +295,18 @@ export function CanvasStage({
               if (newBox.width < 10 || newBox.height < 10) {
                 return oldBox;
               }
+              // Unrotated boxes may not grow past the safe area.
+              if (!newBox.rotation) {
+                const sx = bounds.safeOffsetX, sy = bounds.safeOffsetY;
+                if (newBox.x < sx - 0.5 || newBox.y < sy - 0.5 || newBox.x + newBox.width > sx + bounds.safeWidth + 0.5 || newBox.y + newBox.height > sy + bounds.safeHeight + 0.5) {
+                  return oldBox;
+                }
+              }
               return newBox;
             }}
             rotateEnabled={true}
+            keepRatio={true}
+            enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
             anchorSize={8}
             anchorCornerRadius={2}
             borderStroke="#FF5A1F"

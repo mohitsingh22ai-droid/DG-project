@@ -57,13 +57,16 @@ export function DirectUploadView({ product, widthMm, heightMm, ensureDraftId, on
         method: "PUT",
         headers: { "Content-Type": file.type || "application/octet-stream", "x-upsert": "true" },
         body: file,
+        signal: AbortSignal.timeout(180_000),
       });
       if (!putRes.ok) throw new Error("The file could not be uploaded. Please try again.");
+      setState({ phase: "uploading", fileName: `${file.name} uploaded; checking it` });
 
       const confirmRes = await fetch(`/api/drafts/${draftId}/artwork`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: ticket.path, fileName: file.name }),
+        signal: AbortSignal.timeout(90_000),
       });
       const confirmed = await confirmRes.json();
       if (!confirmRes.ok) throw new Error(confirmed.error || "The file failed pre-flight checks.");
@@ -77,7 +80,11 @@ export function DirectUploadView({ product, widthMm, heightMm, ensureDraftId, on
       });
       onUploadSuccess({ path: ticket.path, fileName: file.name, warnings: confirmed.warnings ?? [] });
     } catch (err: unknown) {
-      setState({ phase: "error", message: err instanceof Error ? err.message : "Upload failed." });
+      const timedOut = err instanceof DOMException && (err.name === "TimeoutError" || err.name === "AbortError");
+      setState({
+        phase: "error",
+        message: timedOut ? "The upload took too long. Check your connection and try again." : err instanceof Error ? err.message : "Upload failed.",
+      });
     }
   };
 
