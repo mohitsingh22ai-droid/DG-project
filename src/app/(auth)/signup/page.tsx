@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, Suspense, useEffect } from "react";
+import React, { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { safeRedirect } from "@/lib/safe-redirect";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 
 function SignupForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect");
   const { signUp, isLoading } = useAuth();
@@ -25,11 +24,6 @@ function SignupForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
-  // Warm up the pages a user lands on after signing in, so the switch is instant.
-  useEffect(() => {
-    router.prefetch("/dashboard");
-    router.prefetch("/production");
-  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,9 +63,11 @@ function SignupForm() {
         console.warn("Could not attach draft on signup:", attachErr);
       }
 
-      // Leave the form busy until the next page has loaded (it unmounts this one).
+      // Leave the form busy until the next page has loaded. A full page load (not a
+      // client-side route change) makes the server check the new session: a route
+      // fetched while signed out would otherwise be reused and bounce back here.
       setIsRedirecting(true);
-      router.replace(safeRedirect(redirectUrl) ?? "/dashboard");
+      window.location.assign(safeRedirect(redirectUrl) ?? "/dashboard");
     } else {
       setIsSubmitting(false);
       setErrorMsg(res.error || "Failed to create account. Please try again.");

@@ -69,6 +69,9 @@ export async function loginViaUi(
 export async function logoutViaUi(page: Page) {
   // Signing out revokes the user's sessions, so cached sessions are no longer valid.
   sessionCache.clear();
+  // After a full page load the header needs a moment to load the session before
+  // the account chip and Sign Out appear; wait for it instead of checking once.
+  await page.getByTestId("nav-account").waitFor({ state: "visible", timeout: 15000 }).catch(() => undefined);
   // On small screens Sign Out lives in the menu drawer.
   const menuToggle = page.getByRole("button", { name: "Toggle menu" });
   if (await menuToggle.isVisible()) await menuToggle.click();
