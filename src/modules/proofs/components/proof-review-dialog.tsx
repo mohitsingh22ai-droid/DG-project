@@ -104,6 +104,10 @@ export function ProofReviewDialog({
                 <Badge variant="success" className="text-xs">
                   APPROVED FOR MANUFACTURE
                 </Badge>
+              ) : proof.status === "superseded" ? (
+                <Badge variant="outline" className="text-xs bg-white/80">
+                  REPLACED BY NEWER VERSION
+                </Badge>
               ) : proof.status === "changes_requested" ? (
                 <Badge variant="destructive" className="text-xs">
                   REVISION PENDING
@@ -121,17 +125,17 @@ export function ProofReviewDialog({
             <div>
               <span className="text-muted-foreground block text-[10px]">FINISHED TRIM</span>
               <span className="font-bold text-foreground">
-                {proof.metadata.widthMm}mm × {proof.metadata.heightMm}mm
+                {proof.metadata.widthMm && proof.metadata.heightMm ? `${proof.metadata.widthMm}mm × ${proof.metadata.heightMm}mm` : "—"}
               </span>
             </div>
             <div>
               <span className="text-muted-foreground block text-[10px]">BLEED OVERPRINT</span>
-              <span className="font-bold text-red-500">+{proof.metadata.bleedMm}mm</span>
+              <span className="font-bold text-red-500">{proof.metadata.bleedMm !== undefined ? `+${proof.metadata.bleedMm}mm` : "—"}</span>
             </div>
             <div>
               <span className="text-muted-foreground block text-[10px]">SUBSTRATE</span>
               <span className="font-bold text-foreground truncate block">
-                {proof.metadata.materialName}
+                {proof.metadata.materialName || "—"}
               </span>
             </div>
             <div>
@@ -223,7 +227,7 @@ export function ProofReviewDialog({
             Close Viewer
           </Button>
 
-          {proof.status !== "approved" && viewMode === "inspect" && (
+          {proof.status === "pending_review" && viewMode === "inspect" && (
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"

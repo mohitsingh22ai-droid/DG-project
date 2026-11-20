@@ -69,3 +69,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
+/** Print-file generation can take longer than the default serverless limit. */
+export const maxDuration = 60;

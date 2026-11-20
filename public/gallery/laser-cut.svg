@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-label="Laser-cut acrylic logo sign mounted on a wall">
+<defs><linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4F5FD"/><stop offset="1" stop-color="#E0E3FF"/></linearGradient>
+<linearGradient id="acr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".95"/><stop offset="1" stop-color="#C7CBFE" stop-opacity=".7"/></linearGradient>
+<filter id="sh"><feDropShadow dx="8" dy="12" stdDeviation="8" flood-color="#1F21A6" flood-opacity=".25"/></filter></defs>
+<rect width="800" height="560" fill="url(#wall)"/>
+<g filter="url(#sh)">
+<rect x="140" y="140" width="520" height="250" rx="22" fill="url(#acr)" stroke="#A5ABFC" stroke-width="3"/>
+<circle cx="170" cy="170" r="9" fill="#9CA3AF"/><circle cx="630" cy="170" r="9" fill="#9CA3AF"/><circle cx="170" cy="360" r="9" fill="#9CA3AF"/><circle cx="630" cy="360" r="9" fill="#9CA3AF"/>
+<path d="M215 300 l35 -90 l35 90 h-18 l-17 -48 l-17 48z" fill="#1F21A6"/>
+<text x="460" y="268" text-anchor="middle" font-family="Helvetica,Arial" font-weight="900" font-size="64" fill="#111827" letter-spacing="2">APEX</text>
+<text x="460" y="312" text-anchor="middle" font-family="Helvetica,Arial" font-weight="600" font-size="22" fill="#2A2DC8" letter-spacing="8">BIKING CO</text>
+</g>
+<text x="400" y="480" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5D6482">Sample work · 3mm cast acrylic, laser-cut and stand-off mounted</text>
+</svg>

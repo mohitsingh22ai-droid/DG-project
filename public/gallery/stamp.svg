@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-label="Self-inking rubber stamp and its impression">
+<defs><filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1F21A6" flood-opacity=".2"/></filter>
+<filter id="ink"><feTurbulence baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.25"/><feComposite in="SourceGraphic" operator="in"/></filter></defs>
+<rect width="800" height="560" fill="#EEF0FF"/>
+<rect x="320" y="150" width="400" height="300" rx="6" fill="#FFFFFF" filter="url(#sh)"/>
+<g filter="url(#ink)" fill="none" stroke="#1D4ED8" font-family="Helvetica,Arial">
+<rect x="365" y="215" width="310" height="150" rx="10" stroke-width="5"/><rect x="377" y="227" width="286" height="126" rx="6" stroke-width="2"/>
+<text x="520" y="275" text-anchor="middle" fill="#1D4ED8" stroke="none" font-weight="800" font-size="30">RECEIVED</text>
+<text x="520" y="312" text-anchor="middle" fill="#1D4ED8" stroke="none" font-size="22">20 NOV 2026</text>
+<text x="520" y="340" text-anchor="middle" fill="#1D4ED8" stroke="none" font-size="15" letter-spacing="2">ACCOUNTS · W2P LTD</text>
+</g>
+<g filter="url(#sh)">
+<rect x="110" y="250" width="170" height="70" rx="10" fill="#1F2937"/>
+<rect x="125" y="170" width="140" height="90" rx="14" fill="#374151"/>
+<rect x="150" y="110" width="90" height="70" rx="30" fill="#111827"/>
+<rect x="118" y="320" width="154" height="30" rx="4" fill="#1D4ED8"/>
+<text x="195" y="295" text-anchor="middle" font-family="Helvetica,Arial" font-weight="700" font-size="16" fill="#9CA3AF">SELF-INKING</text>
+</g>
+<text x="400" y="520" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5D6482">Sample work · self-inking stamp, 58 × 22 mm, royal blue ink</text>
+</svg>

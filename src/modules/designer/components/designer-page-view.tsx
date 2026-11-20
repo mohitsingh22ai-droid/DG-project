@@ -1,7 +1,7 @@
 "use client";
 
 import { VariableDataAttach } from "@/modules/variable-data/components/variable-data-attach";
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { Product } from "@/types/database";
@@ -15,7 +15,9 @@ import {
 } from "../types";
 import { calculatePrintBounds, computeFittedFontSize } from "../utils/print-constraints";
 import { DesignerToolbar } from "./designer-toolbar";
+import { applyTemplate, builtInTemplatesFor, DesignTemplate } from "../templates";
 import { DirectUploadView } from "./direct-upload-view";
+import { ProofPreviewModal } from "./proof-preview-modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -26,7 +28,6 @@ import {
   Eye,
   CheckCircle2,
   ArrowRight,
-  Loader2,
 } from "lucide-react";
 import Konva from "konva";
 
@@ -57,7 +58,9 @@ export function DesignerPageView({
   quantity,
 }: DesignerPageViewProps) {
   const router = useRouter();
-  const [effectiveDraftId, setEffectiveDraftId] = useState<string>(draftId || "");
+  // The id is also kept in a ref: state updates are not visible to handlers that
+  // run in the same tick (e.g. upload → open proof), which used to create a second, empty job.
+  const draftIdRef = useRef<string>(draftId || "");
   const [currentProofVersion, setCurrentProofVersion] = useState<number>(1);
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const savedCanvas = initialDesign && Array.isArray((initialDesign as { elements?: unknown }).elements)
@@ -79,50 +82,44 @@ export function DesignerPageView({
   const [showBleedGuide, setShowBleedGuide] = useState<boolean>(true);
   const [showTrimGuide, setShowTrimGuide] = useState<boolean>(true);
   const [showSafeGuide, setShowSafeGuide] = useState<boolean>(true);
-  // Issue 2: Editor-only "Show guides" toggle (default on) (§ 06, § 08)
+  // Editor-only "Show guides" toggle (default on). Guides are never part of the proof or print file (§ 06, § 08).
   const [showGuides, setShowGuides] = useState<boolean>(true);
 
-  // Initial Sample Elements
-  const [elements, setElements] = useState<CanvasElement[]>(savedCanvas?.elements ?? [
-    {
-      id: "el-brand-title",
-      type: "text",
-      x: 50,
-      y: 60,
-      text: product.name.toUpperCase(),
-      fontSize: 22,
-      fontFamily: "Plus Jakarta Sans",
-      fill: "#111318",
-      align: "left",
-      isBold: true,
-      rotation: 0,
-      opacity: 1,
-    },
-    {
-      id: "el-brand-subtitle",
-      type: "text",
-      x: 50,
-      y: 100,
-      text: "CUSTOM MANUFACTURING SPEC",
-      fontSize: 12,
-      fontFamily: "JetBrains Mono",
-      fill: "#FF5A1F",
-      align: "left",
-      isBold: true,
-      rotation: 0,
-      opacity: 1,
-    },
-  ]);
+  // New designs start from the division's first template (PRD § 06), always inside the safe area.
+  const [elements, setElements] = useState<CanvasElement[]>(() => {
+    if (savedCanvas?.elements) return savedCanvas.elements;
+    const starter = builtInTemplatesFor(product.division_slug)[0];
+    return starter ? applyTemplate(starter, calculatePrintBounds(dimensions, 700, 520)) : [];
+  });
+  const [templates, setTemplates] = useState<DesignTemplate[]>(() => builtInTemplatesFor(product.division_slug));
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/templates?division=${encodeURIComponent(product.division_slug)}&product=${encodeURIComponent(product.id)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (!cancelled && data?.templates?.length) setTemplates(data.templates); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [product.division_slug, product.id]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [proofModalOpen, setProofModalOpen] = useState<boolean>(false);
   const [proofDataUrl, setProofDataUrl] = useState<string | null>(null);
+  const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
+  const [proofError, setProofError] = useState<string | null>(null);
   const [savedJsonNotice, setSavedJsonNotice] = useState<string | null>(null);
 
   // Compute print pixel bounds
   const bounds = useMemo(() => {
     return calculatePrintBounds(dimensions, 700, 520);
   }, [dimensions]);
+
+  const handleApplyTemplate = (templateId: string) => {
+    const tpl = templates.find((t) => t.id === templateId);
+    if (!tpl) return;
+    if (elements.length > 0 && !window.confirm(`Replace the current design with the "${tpl.name}" template?`)) return;
+    setElements(applyTemplate(tpl, bounds));
+    setSelectedId(null);
+  };
 
   // Add Text with Placeholder Fitting Rules (§ 04)
   const handleAddText = (type: "heading" | "body") => {
@@ -136,7 +133,7 @@ export function DesignerPageView({
     const newElement: TextCanvasElement = {
       id: `text-${Date.now()}`,
       type: "text",
-      x: bounds.safeOffsetX + 20,
+      x: bounds.safeOffsetX,
       y: bounds.safeOffsetY + (elements.length * 30) % 200 + 20,
       text: sampleText,
       fontSize: fittedSize,
@@ -178,21 +175,33 @@ export function DesignerPageView({
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      if (typeof ev.target?.result === "string") {
+      const src = ev.target?.result;
+      if (typeof src !== "string") return;
+      // Keep the logo's own proportions and fit it inside the safe area.
+      const probe = new window.Image();
+      probe.onload = () => {
+        const natW = probe.naturalWidth || 1;
+        const natH = probe.naturalHeight || 1;
+        const maxW = Math.min(bounds.safeWidth, Math.max(80, bounds.safeWidth * 0.5));
+        const maxH = Math.min(bounds.safeHeight, Math.max(80, bounds.safeHeight * 0.5));
+        const scale = Math.min(maxW / natW, maxH / natH, 1);
+        const width = Math.max(10, Math.round(natW * scale));
+        const height = Math.max(10, Math.round(natH * scale));
         const newImg: ImageCanvasElement = {
           id: `img-${Date.now()}`,
           type: "image",
-          src: ev.target.result,
-          x: bounds.safeOffsetX + 40,
-          y: bounds.safeOffsetY + 40,
-          width: 120,
-          height: 120,
+          src,
+          x: bounds.safeOffsetX + (bounds.safeWidth - width) / 2,
+          y: bounds.safeOffsetY + (bounds.safeHeight - height) / 2,
+          width,
+          height,
           rotation: 0,
           opacity: 1,
         };
-        setElements([...elements, newImg]);
+        setElements((prev) => [...prev, newImg]);
         setSelectedId(newImg.id);
-      }
+      };
+      probe.src = src;
     };
     reader.readAsDataURL(file);
   };
@@ -264,7 +273,7 @@ export function DesignerPageView({
 
   // Creates the job draft the first time it is needed (no draft is created just by viewing).
   const ensureDraftId = async (): Promise<string> => {
-    if (effectiveDraftId) return effectiveDraftId;
+    if (draftIdRef.current) return draftIdRef.current;
     const res = await fetch("/api/drafts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -278,57 +287,42 @@ export function DesignerPageView({
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Could not start the job.");
-    setEffectiveDraftId(data.draft.id);
+    draftIdRef.current = data.draft.id;
     window.history.replaceState(null, "", `?draft=${data.draft.id}`);
     return data.draft.id as string;
   };
 
-  // Real-Time Proof Preview Generation (§ 06 & § 08)
+  // Proof preview (§ 06, § 08): the server renders and stores the proof from the saved
+  // artwork; the modal shows that stored proof, so what is approved is what is printed.
   const handleOpenProofModal = async () => {
-    let uri: string | null = null;
-    if (stageRef.current) {
-      const stage = stageRef.current;
-      // Issue 2: Guides belong in editor only. Temporarily hide guides layer before capture
-      const guidesLayer = stage.findOne(".guides-overlay-layer") || stage.getLayers()[1];
-      const wasVisible = guidesLayer ? guidesLayer.visible() : true;
-      if (guidesLayer) {
-        guidesLayer.visible(false);
-        stage.batchDraw();
-      }
-      try {
-        uri = stage.toDataURL({ pixelRatio: 2 });
-      } catch (err) {
-        console.warn("Stage toDataURL fallback:", err);
-      } finally {
-        if (guidesLayer && wasVisible) {
-          guidesLayer.visible(true);
-          stage.batchDraw();
-        }
-      }
-    }
-    if (!uri) {
-      uri = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><rect width='400' height='400' fill='%23ffffff'/><text x='60' y='200' font-family='sans-serif' font-size='22' font-weight='bold' fill='%23111827'>W2P PROOF PREVIEW</text></svg>";
-    }
-    setProofDataUrl(uri);
+    // Selection handles are editor chrome, never part of the proof.
+    setSelectedId(null);
+    setProofDataUrl(null);
+    setArtworkPreview(null);
+    setProofError(null);
     setProofModalOpen(true);
-
-    {
-      try {
-        const draftIdForProof = await ensureDraftId();
-        await fetch(`/api/drafts/${draftIdForProof}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            updates: {
-              status: "proof_pending",
-              ...(mode === "designer" ? { designJson: serializeCanvasState() } : {}),
-            },
-            action: "PROOF_GENERATED",
-          }),
-        });
-      } catch (e) {
-        console.error("Draft update error:", e);
-      }
+    try {
+      const id = await ensureDraftId();
+      const patch = await fetch(`/api/drafts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          updates: {
+            status: "proof_pending",
+            ...(mode === "designer" ? { designJson: serializeCanvasState() } : {}),
+          },
+          action: "PROOF_GENERATED",
+        }),
+      });
+      const data = await patch.json();
+      if (!patch.ok) throw new Error(data.error || "The proof could not be generated.");
+      const draft = data.draft as { proofVersion: number; proofs: Array<{ version: number; renderedUrl: string }>; artworkUrl?: string | null; designJson?: { kind?: string } | null };
+      const proof = draft.proofs.find((pr) => pr.version === draft.proofVersion) ?? draft.proofs[draft.proofs.length - 1];
+      setCurrentProofVersion(draft.proofVersion);
+      setProofDataUrl(proof?.renderedUrl || null);
+      if (draft.artworkUrl && draft.designJson?.kind === "pdf") setArtworkPreview(draft.artworkUrl);
+    } catch (e) {
+      setProofError(e instanceof Error ? e.message : "The proof could not be generated.");
     }
   };
 
@@ -374,9 +368,9 @@ export function DesignerPageView({
   };
 
   const handleRequestChanges = async () => {
-    if (effectiveDraftId) {
+    if (draftIdRef.current) {
       try {
-        const res = await fetch(`/api/drafts/${effectiveDraftId}/request-changes`, {
+        const res = await fetch(`/api/drafts/${draftIdRef.current}/request-changes`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -460,7 +454,7 @@ export function DesignerPageView({
                   Visual Manufacturing Canvas
                 </span>
                 <div className="flex items-center gap-3">
-                  {/* Issue 2: Editor-only "Show guides" toggle (default on) */}
+                  {/* Editor-only "Show guides" toggle */}
                   <Button
                     variant={showGuides ? "secondary" : "outline"}
                     size="sm"
@@ -471,6 +465,20 @@ export function DesignerPageView({
                     <Eye className="w-3 h-3 text-brand-500" />
                     <span>{showGuides ? "Guides ON" : "Guides OFF"}</span>
                   </Button>
+                  {templates.length > 0 && (
+                    <select
+                      aria-label="Start from a template"
+                      data-testid="template-select"
+                      value=""
+                      onChange={(e) => handleApplyTemplate(e.target.value)}
+                      className="h-7 rounded-md border border-border bg-background px-2 text-xs"
+                    >
+                      <option value="">Templates…</option>
+                      {templates.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
                   <span>Scale: {bounds.scaleFactor.toFixed(2)} px/mm</span>
                 </div>
               </div>
@@ -583,82 +591,21 @@ export function DesignerPageView({
         </div>
       )}
 
-      {/* REAL-TIME PROOF PREVIEW MODAL (§ 06 & § 08) */}
-      {proofModalOpen && proofDataUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in overflow-y-auto">
-          <div className="bg-card border max-w-2xl w-full rounded-2xl shadow-elevation overflow-hidden my-auto max-h-[92vh] flex flex-col">
-            <div className="p-4 sm:p-6 border-b flex items-center justify-between shrink-0">
-              <div>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-600 text-xs font-medium">
-                  Digital Proof Inspection
-                </span>
-                <h3 className="text-lg sm:text-xl font-bold font-heading mt-1">
-                  Digital Proof Approval Inspection
-                </h3>
-              </div>
-              <button
-                onClick={() => setProofModalOpen(false)}
-                className="text-muted-foreground hover:text-foreground text-sm font-mono p-1"
-              >
-                ✕ Close
-              </button>
-            </div>
-
-            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
-              {/* Proof Canvas with Watermark */}
-              <div className="relative rounded-xl overflow-hidden border bg-industrial-950 flex justify-center items-center p-3 sm:p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={proofDataUrl}
-                  alt="Proof Preview"
-                  className="max-h-56 sm:max-h-80 object-contain rounded shadow"
-                />
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-white/20 text-2xl sm:text-3xl font-mono font-extrabold uppercase tracking-widest rotate-[-15deg]">
-                    W2P PROOF · v{currentProofVersion}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-4 rounded-lg bg-secondary/50 border text-xs font-mono space-y-1">
-                <div>• Verified Size: {dimensions.widthMm}mm × {dimensions.heightMm}mm</div>
-                <div>• High-Res Bleed: +{dimensions.bleedMm}mm included</div>
-                <div>• Production Gate: Files unlock immediately upon proof approval</div>
-                <div>• Proof Version: v{currentProofVersion} (Pre-Press Asset)</div>
-              </div>
-            </div>
-
-            <div className="p-4 sm:p-6 bg-secondary/30 border-t flex flex-wrap items-center justify-between gap-3 shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRequestChanges}
-                className="text-xs font-mono"
-              >
-                Adjust Artwork
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={handleApproveProof}
-                disabled={isApproving}
-                className="font-semibold text-xs shadow-glow bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {isApproving ? (
-                  <span className="flex items-center gap-1.5">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Recording Approval...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Approve Proof v{currentProofVersion} & Proceed to Checkout
-                  </span>
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Proof preview popup (§ 06 & § 08) */}
+      {proofModalOpen && (
+        <ProofPreviewModal
+          proofDataUrl={proofDataUrl}
+          artworkPreview={artworkPreview}
+          proofError={proofError}
+          currentProofVersion={currentProofVersion}
+          widthMm={dimensions.widthMm}
+          heightMm={dimensions.heightMm}
+          bleedMm={dimensions.bleedMm}
+          isApproving={isApproving}
+          onClose={() => setProofModalOpen(false)}
+          onRequestChanges={handleRequestChanges}
+          onApprove={handleApproveProof}
+        />
       )}
     </div>
   );

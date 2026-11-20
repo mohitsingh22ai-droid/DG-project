@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
 import { getOrderById, checkReadyForProduction } from "@/modules/orders/order-store";
+import { getProofLogForDraft } from "@/modules/proofs/proofs-store";
 
 export async function GET(
   req: NextRequest,
@@ -20,6 +21,7 @@ export async function GET(
     }
 
     const gate = checkReadyForProduction(order);
+    const proofLog = order.draft_id ? await getProofLogForDraft(order.draft_id) : [];
 
     return NextResponse.json({
       order: {
@@ -28,6 +30,7 @@ export async function GET(
         notReadyReason: gate.reason,
         proofApproved: gate.proofApproved,
         paymentConfirmed: gate.paymentConfirmed,
+        proofLog,
       },
     });
   } catch (err: unknown) {

@@ -104,3 +104,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   return NextResponse.json({ draft: await presentDraft(updated), kind: check.kind, warnings: check.warnings, effectiveDpi: check.effectiveDpi });
 }
+
+/** Print-file generation can take longer than the default serverless limit. */
+export const maxDuration = 60;

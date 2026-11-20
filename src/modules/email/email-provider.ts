@@ -26,7 +26,11 @@ export interface CapturedEmail {
   sentAt: string;
 }
 
-const CAPTURED_EMAILS_FILE = dataFile(".email-captured-sink.json");
+/**
+ * Test-capture file, resolved lazily: it is only used in test mode, and resolving
+ * it creates a directory, which must never happen on a read-only serverless filesystem.
+ */
+const capturedEmailsFile = () => dataFile(".email-captured-sink.json");
 
 let inMemoryCaptured: CapturedEmail[] = [];
 let simulatedFailure: { enabled: boolean; error: string } = {
@@ -45,7 +49,7 @@ function isTestEnv(): boolean {
 function persistCapturedIfTest() {
   if (isTestEnv()) {
     try {
-      fs.writeFileSync(CAPTURED_EMAILS_FILE, JSON.stringify(inMemoryCaptured, null, 2), "utf-8");
+      fs.writeFileSync(capturedEmailsFile(), JSON.stringify(inMemoryCaptured, null, 2), "utf-8");
     } catch {
       // In sandbox/read-only environment, in-memory is sufficient
     }
@@ -55,8 +59,8 @@ function persistCapturedIfTest() {
 function loadCapturedIfTest() {
   if (isTestEnv()) {
     try {
-      if (fs.existsSync(CAPTURED_EMAILS_FILE)) {
-        const raw = fs.readFileSync(CAPTURED_EMAILS_FILE, "utf-8");
+      if (fs.existsSync(capturedEmailsFile())) {
+        const raw = fs.readFileSync(capturedEmailsFile(), "utf-8");
         inMemoryCaptured = JSON.parse(raw);
       }
     } catch {
@@ -90,8 +94,8 @@ export function clearCapturedEmails(): void {
   inMemoryCaptured = [];
   if (isTestEnv()) {
     try {
-      if (fs.existsSync(CAPTURED_EMAILS_FILE)) {
-        fs.unlinkSync(CAPTURED_EMAILS_FILE);
+      if (fs.existsSync(capturedEmailsFile())) {
+        fs.unlinkSync(capturedEmailsFile());
       }
     } catch {}
   }
