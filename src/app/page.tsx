@@ -155,7 +155,7 @@ export default async function HomePage() {
                   </Link>
                 </Button>
                 <Button asChild variant="industrial" className="border-industrial-700">
-                  <Link href="/variable-data">Bulk names &amp; numbers</Link>
+                  <Link href="/variable-data">Variable data printing</Link>
                 </Button>
               </div>
             </div>
@@ -231,7 +231,7 @@ export default async function HomePage() {
             <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center text-brand-700 font-bold">
               <Cpu className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base font-heading">Names and numbers in bulk</h3>
+            <h3 className="font-bold text-base font-heading">Variable data printing</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Upload a spreadsheet of names or race numbers and get a personalised bib, board or badge for every row.
             </p>

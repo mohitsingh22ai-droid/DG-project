@@ -608,6 +608,7 @@ export function DesignerPageView({
       {product.has_variable_data && (
         <div className="max-w-2xl">
           <VariableDataAttach
+            productSlug={product.slug}
             quantity={quantity}
             sampleHeaders={product.variable_data_sample_headers}
             ensureDraftId={ensureDraftId}

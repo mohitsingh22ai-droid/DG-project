@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appOrigin } from "@/lib/app-url";
 import { z } from "zod";
 import { getAuthUser } from "@/lib/server-auth";
 import { authorizeDraft } from "@/lib/draft-access";
@@ -197,7 +198,7 @@ export async function POST(req: NextRequest) {
     }
     if (!order) throw new Error("Order could not be prepared.");
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
+    const origin = appOrigin(req.nextUrl.origin);
     const session = await stripe().checkout.sessions.create(
       {
         mode: "payment",

@@ -74,7 +74,7 @@ export function DivisionView({ division, products }: DivisionViewProps) {
                   />
                   {prod.has_variable_data && (
                     <Badge variant="default" className="absolute top-3 left-3 bg-blue-600 text-[10px] font-mono">
-                      Names &amp; numbers from a spreadsheet
+                      Variable data printing
                     </Badge>
                   )}
                 </div>

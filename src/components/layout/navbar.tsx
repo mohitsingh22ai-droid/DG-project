@@ -12,7 +12,7 @@ import { ProductMenu } from "./product-menu";
 // "Products" is a button that opens the product menu; these are plain links.
 const PUBLIC_LINKS = [
   { href: "/calculator", label: "Price calculator", icon: Calculator },
-  { href: "/variable-data", label: "Names & numbers", icon: ListOrdered },
+  { href: "/variable-data", label: "Variable Data", icon: ListOrdered },
   { href: "/gallery", label: "Gallery", icon: Images },
 ];
 

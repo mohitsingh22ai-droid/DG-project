@@ -90,7 +90,7 @@ export default async function GalleryPage({ searchParams }: { searchParams: Prom
                 {prod.has_variable_data && (
                   <span className="inline-flex items-center gap-1 text-brand-700">
                     <ListOrdered className="w-3.5 h-3.5" aria-hidden="true" />
-                    Names &amp; numbers from a spreadsheet
+                    Variable data printing
                   </span>
                 )}
               </div>
