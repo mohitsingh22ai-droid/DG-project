@@ -6,16 +6,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Download, CheckCircle2, AlertCircle, ArrowRight, RefreshCw, Eye, PackageCheck } from "lucide-react";
+import { Search, Download, CheckCircle2, AlertCircle, RefreshCw, Eye, PackageCheck, MessageSquareWarning } from "lucide-react";
 import { formatINR } from "@/modules/pricing/gst";
-import type { PipelineStage } from "@/types/database";
+import { workflowActions, waitingFor, STAGE_BADGE, type WorkflowAction } from "@/modules/orders/order-workflow";
 import type { AdminOrder } from "./types";
 
 
 /**
  * Admin → Orders & pipeline (PRD § 11): the searchable job database with filters
  * (status, payment, product family, free text), the ready-for-production
- * indicator, stage controls and production-file download per order.
+ * indicator, the next workflow step and production-file download per order.
+ * Workflow steps open a confirmation dialog (see workflow-dialog.tsx); nothing
+ * changes stage with a single click.
  * State and data loading live in the parent console; this component renders it.
  */
 export interface OrdersTabProps {
@@ -34,8 +36,12 @@ export interface OrdersTabProps {
   setSelectedPaymentStatus: (value: string) => void;
   setSelectedDivision: (value: string) => void;
   setPage: React.Dispatch<React.SetStateAction<number>>;
+  /** Show only orders with an open customer change request. */
+  changeRequestsOnly: boolean;
+  setChangeRequestsOnly: (value: boolean) => void;
   fetchOrders: () => void;
-  onUpdateStage: (order: AdminOrder, stage: PipelineStage) => void;
+  /** Opens the confirmation dialog for a workflow step. */
+  onAction: (order: AdminOrder, action: WorkflowAction) => void;
   onDownload: (order: AdminOrder) => void;
   onOpenDetail: (order: AdminOrder) => void;
 }
@@ -56,8 +62,10 @@ export function OrdersTab({
   setSelectedPaymentStatus,
   setSelectedDivision,
   setPage,
+  changeRequestsOnly,
+  setChangeRequestsOnly,
   fetchOrders,
-  onUpdateStage,
+  onAction,
   onDownload,
   onOpenDetail,
 }: OrdersTabProps) {
@@ -162,13 +170,31 @@ export function OrdersTab({
               </select>
             </div>
           </div>
+          {/* Quick filter: orders waiting on pre-press because the customer asked for changes */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setChangeRequestsOnly(!changeRequestsOnly);
+                setPage(1);
+              }}
+              aria-pressed={changeRequestsOnly}
+              data-testid="admin-change-requests-filter"
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                changeRequestsOnly ? "bg-amber-500 border-amber-500 text-white" : "bg-white border-amber-300 text-amber-800 hover:bg-amber-50"
+              }`}
+            >
+              <MessageSquareWarning className="w-3.5 h-3.5" aria-hidden="true" />
+              Change requests only
+            </button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Orders Table & State Handling */}
       {isOrdersLoading ? (
         <div className="py-12 text-center text-neutral-500">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-[#FF5A1F]" />
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-flame-600" />
           Loading persistent orders from database...
         </div>
       ) : ordersError ? (
@@ -205,15 +231,9 @@ export function OrdersTab({
               <tbody className="divide-y divide-neutral-200">
                 {orders.map((ord) => {
                   const addr = ord.shipping_address || {};
-                  const nextStageMap: Record<PipelineStage, PipelineStage | null> = {
-                    QUOTE: "ORDER",
-                    ORDER: "ARTWORK",
-                    ARTWORK: "PROOF",
-                    PROOF: "PRODUCTION",
-                    PRODUCTION: "COMPLETED",
-                    COMPLETED: null,
-                  };
-                  const nextStage = nextStageMap[ord.pipeline_stage as PipelineStage];
+                  const actions = workflowActions(ord);
+                  const nextAction = actions.find((a) => a.primary) ?? null;
+                  const waiting = waitingFor(ord);
 
                   return (
                     <tr
@@ -249,17 +269,19 @@ export function OrdersTab({
 
                       {/* Pipeline Stage */}
                       <td className="py-4 px-4">
-                        <Badge
-                          className={`text-[11px] font-semibold tracking-wide ${
-                            ord.pipeline_stage === "COMPLETED"
-                              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"
-                              : ord.pipeline_stage === "PRODUCTION"
-                              ? "bg-blue-100 text-blue-800 hover:bg-blue-100"
-                              : "bg-neutral-100 text-neutral-800 hover:bg-neutral-100"
-                          }`}
-                        >
+                        <Badge className={`text-[11px] font-semibold tracking-wide border-transparent ${STAGE_BADGE[ord.pipeline_stage]}`}>
                           {ord.pipeline_stage}
                         </Badge>
+                        {ord.change_request && (
+                          <div
+                            className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
+                            title={ord.change_request}
+                            data-testid="admin-change-request-badge"
+                          >
+                            <MessageSquareWarning className="w-3 h-3" aria-hidden="true" />
+                            Changes requested
+                          </div>
+                        )}
                       </td>
 
                       {/* Payment Status */}
@@ -323,20 +345,24 @@ export function OrdersTab({
                             <Eye className="w-3.5 h-3.5" />
                           </Button>
 
-                          {/* Advance Stage Button (Forward 1 step) */}
-                          {nextStage && (
+                          {/* Next workflow step (opens a confirmation dialog) or what the order waits for */}
+                          {nextAction ? (
                             <Button
                               size="sm"
                               variant="outline"
-                              data-testid="admin-advance-stage-btn"
-                              onClick={() => onUpdateStage(ord, nextStage)}
-                              className="h-8 px-2 text-xs bg-neutral-50 hover:bg-neutral-100"
-                              title={`Advance to ${nextStage}`}
+                              data-testid="admin-next-action-btn"
+                              onClick={() => onAction(ord, nextAction)}
+                              disabled={!!nextAction.disabledReason}
+                              title={nextAction.disabledReason || nextAction.description}
+                              className="h-8 px-2.5 text-xs whitespace-nowrap"
                             >
-                              <ArrowRight className="w-3.5 h-3.5 mr-1" />
-                              {nextStage}
+                              {nextAction.label}
                             </Button>
-                          )}
+                          ) : waiting ? (
+                            <span className="px-2 text-[11px] text-neutral-500 whitespace-nowrap" data-testid="admin-waiting-for">
+                              {waiting}
+                            </span>
+                          ) : null}
 
                           {/* Download Production Button (Protected by Ready Gate) */}
                           <Button
@@ -346,7 +372,7 @@ export function OrdersTab({
                             disabled={!ord.isReadyForProduction}
                             className={`h-8 px-2 text-xs text-white ${
                               ord.isReadyForProduction
-                                ? "bg-[#FF5A1F] hover:bg-[#E0480F]"
+                                ? "bg-flame-500 hover:bg-flame-600"
                                 : "bg-neutral-300 cursor-not-allowed text-neutral-500"
                             }`}
                             title={ord.isReadyForProduction ? "Download 300 DPI Production Package" : ord.notReadyReason || "Locked"}

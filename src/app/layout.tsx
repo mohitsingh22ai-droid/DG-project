@@ -6,7 +6,7 @@ import { Footer } from "@/components/layout/footer";
 
 export const metadata: Metadata = {
   title: "W2P · Commercial Web-to-Print Platform",
-  description: "Six print divisions, one owned platform. Instant parameter-driven pricing, in-browser designer, and automated production pipelines.",
+  description: "Custom labels, race numbers, MTB boards, stamps, trophies and laser-cut work. Design online, see your price instantly and approve a proof before we print.",
 };
 
 /*

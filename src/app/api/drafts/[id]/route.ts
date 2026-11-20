@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Draft not found" }, { status: 404 });
     }
 
-    const access = await authorizeDraft(req, draft);
+    const access = await authorizeDraft(req, draft, "read");
     if (!access.ok) return access.response;
 
     // Optional ?placeOfSupply=<GST state code> prices the job for a delivery state.

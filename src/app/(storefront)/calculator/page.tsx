@@ -6,7 +6,7 @@ export const revalidate = 60;
 
 export const metadata = {
   title: "Instant Price Calculator · W2P Print House",
-  description: "Live instant pricing by dimensions, material multiplier, and automated volume discount floors. Fully transparent with GST breakdown.",
+  description: "See the price for any size, material and quantity, with bulk discounts and GST shown.",
 };
 
 export default async function CalculatorPage() {
@@ -15,13 +15,13 @@ export default async function CalculatorPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-8 space-y-2">
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-600 text-xs font-medium">
-          Live Pricing Calculator
+          Instant prices
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold font-heading tracking-tight">
-          Instant Pricing Engine
+          Price Calculator
         </h1>
         <p className="text-muted-foreground text-sm max-w-2xl">
-          Real-time per-unit pricing powered by parametric formulas. Adjust width and height down to the exact millimeter, select your substrate material, and watch volume discounts apply automatically.
+          Pick a product, set your size and quantity, and see your price straight away. Bulk discounts apply automatically.
         </p>
       </div>
 

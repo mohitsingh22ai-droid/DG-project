@@ -13,7 +13,8 @@ export interface AdminAuditEntry {
     | "user_status_change"
     | "product_template_edit"
     | "order_archive"
-    | "accounting_export";
+    | "accounting_export"
+    | "order_artwork_replace";
   target_type: "order" | "user" | "product" | "template";
   target_id: string;
   details: Record<string, unknown>;

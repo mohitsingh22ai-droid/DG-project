@@ -175,7 +175,7 @@ function SignupForm() {
         <CardFooter className="border-t pt-4 text-center justify-center text-xs text-muted-foreground bg-secondary/30">
           Already registered?{" "}
           <Link href="/login" className="text-brand-500 font-semibold hover:underline ml-1">
-            Sign In to your portal
+            Sign in
           </Link>
         </CardFooter>
       </Card>

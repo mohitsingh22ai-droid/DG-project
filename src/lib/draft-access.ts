@@ -48,12 +48,32 @@ type DraftAccess =
   | { ok: true; actor: DraftActor }
   | { ok: false; response: NextResponse };
 
-/** Checks that the caller may act on `draft`; returns the actor to record in the audit trail. */
-export async function authorizeDraft(req: NextRequest, draft: JobDraft): Promise<DraftAccess> {
+/**
+ * Checks that the caller may act on `draft`; returns the actor to record in the audit trail.
+ *
+ * `access`: "read" lets staff view any customer's job (support). "write" (the default:
+ * editing artwork, CSV data, approving or rejecting a proof, checkout) is limited to
+ * the job's own customer or guest, so the approval log always records the customer's
+ * own decision and staff can never change or approve a job on a customer's behalf.
+ * Staff change paid orders only through the admin order workflow.
+ */
+export async function authorizeDraft(req: NextRequest, draft: JobDraft, access: "read" | "write" = "write"): Promise<DraftAccess> {
   const user = await getAuthUser(req);
 
   if (user?.role === "admin") {
-    return { ok: true, actor: { id: user.id, email: user.email, user, isAdmin: true } };
+    if (access === "read") {
+      return { ok: true, actor: { id: user.id, email: user.email, user, isAdmin: true } };
+    }
+    // An admin's own job (e.g. trying the designer) is theirs to edit; checkout refuses admins separately.
+    if (draft.customerId && draft.customerId !== user.id) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { error: "Staff can view a customer's job, but only the customer can change or approve it." },
+          { status: 403 }
+        ),
+      };
+    }
   }
 
   if (draft.customerId) {

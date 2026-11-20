@@ -72,7 +72,7 @@ test.describe("W4. Web-to-Print Designer (PRD §06)", () => {
     // Modal dialog opens
     const dialog = page.locator("role=dialog").or(page.locator(".fixed.inset-0"));
     await expect(dialog.first()).toBeVisible();
-    await expect(dialog.first()).toContainText("Digital Proof Inspection");
+    await expect(dialog.first()).toContainText("Your proof");
 
     // Verify close or approve action
     const closeBtn = dialog.locator("button:has-text('Close')").or(dialog.locator("button:has-text('Return')")).first();

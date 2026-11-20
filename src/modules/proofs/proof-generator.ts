@@ -10,8 +10,8 @@ import { ProofMetadata } from "./types";
 
 /**
  * Builds the customer proof (§ 08): the actual artwork drawn at its true
- * proportions inside the trim box, with the bleed area shaded, a "PROOF" watermark
- * and a metadata strip. `artworkFragment` is SVG in mm units covering the bleed
+ * proportions inside the trim box, with the bleed area shaded and a caption strip
+ * naming the proof version, product, size and date (no text over the artwork). `artworkFragment` is SVG in mm units covering the bleed
  * box (see renderDesignFragment); when it is missing (e.g. PDF/AI uploads that are
  * checked by pre-press) a clearly labelled placeholder is shown instead.
  */
@@ -35,7 +35,6 @@ export function generateWatermarkedProofSvg(meta: ProofMetadata, artworkFragment
   <g clip-path="url(#bleed)">${artwork}</g>
   <path d="M0 0H${fullW}V${fullH}H0Z M${b} ${b}V${b + h}H${b + w}V${b}Z" fill="#000" fill-opacity="0.18" fill-rule="evenodd"/>
   <rect x="${b}" y="${b}" width="${w}" height="${h}" fill="none" stroke="#DC2626" stroke-width="${Math.max(0.15, fullW / 400)}" stroke-dasharray="1 0.6"/>
-  <text x="${fullW / 2}" y="${fullH / 2}" text-anchor="middle" dominant-baseline="middle" transform="rotate(-25 ${fullW / 2} ${fullH / 2})" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="${Math.min(fullW, fullH) * 0.16}" fill="#DC2626" fill-opacity="0.18">PROOF v${meta.version}</text>
   <rect x="0" y="${fullH}" width="${fullW}" height="${strip}" fill="#18181B"/>
   <text x="${fontSize}" y="${fullH + strip * 0.42}" font-family="Helvetica, Arial, sans-serif" font-size="${fontSize}" fill="#FAFAFA">${esc(`Proof v${meta.version} · ${meta.productName || meta.materialName || ""}`)}</text>
   <text x="${fontSize}" y="${fullH + strip * 0.8}" font-family="Helvetica, Arial, sans-serif" font-size="${fontSize * 0.85}" fill="#A1A1AA">${esc(`Trim ${w}×${h} mm · bleed ${b} mm (shaded) · ${meta.materialName || ""} · ${meta.createdAt.slice(0, 10)}`)}</text>

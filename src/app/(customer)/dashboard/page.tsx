@@ -3,7 +3,7 @@ import { CustomerDashboardView } from "@/modules/customer/components/customer-da
 
 export const metadata = {
   title: "Customer Dashboard · W2P Print House",
-  description: "Customer portal: live order tracking, proof review & approvals, saved design library, and 1-click repeat reorder.",
+  description: "Track your orders, approve proofs and reorder in one click.",
 };
 
 export default function DashboardPage() {

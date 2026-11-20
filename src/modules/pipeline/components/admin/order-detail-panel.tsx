@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { formatINR } from "@/modules/pricing/gst";
 import type { AdminOrder, AdminOrderDetail } from "./types";
+import { workflowActions, waitingFor, type WorkflowAction } from "@/modules/orders/order-workflow";
 
 
 /**
@@ -18,14 +19,12 @@ interface OrderDetailPanelProps {
   /** The row clicked in the orders table. */
   initialOrder: AdminOrder;
   onClose: () => void;
-  /** Called after the order changed here (e.g. a revised proof moved it to PROOF), so the list can refresh. */
-  onOrderChanged?: () => void;
+  /** Opens the confirmation dialog for a workflow step (managed by the console). */
+  onAction: (order: AdminOrder, action: WorkflowAction) => void;
 }
 
-export function OrderDetailPanel({ initialOrder, onClose, onOrderChanged }: OrderDetailPanelProps) {
+export function OrderDetailPanel({ initialOrder, onClose, onAction }: OrderDetailPanelProps) {
   const [order, setOrder] = useState<AdminOrderDetail>(initialOrder);
-  const [isIssuingProof, setIsIssuingProof] = useState(false);
-  const [proofMessage, setProofMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   /** Loads the full order record (proof log, gate) for the order shown. */
   const loadDetail = useCallback(async () => {
@@ -42,28 +41,8 @@ export function OrderDetailPanel({ initialOrder, onClose, onOrderChanged }: Orde
     loadDetail();
   }, [loadDetail]);
 
-  /**
-   * Issues the next proof version (v+1) from the order's current artwork (PRD § 08).
-   * The server moves the order ARTWORK → PROOF, withdraws the earlier approval
-   * (production locks again) and emails the customer to review it.
-   */
-  const handleIssueRevisedProof = async () => {
-    if (!window.confirm(`Issue a new proof version for ${order.order_number}? Production stays locked until the customer approves it.`)) return;
-    setIsIssuingProof(true);
-    setProofMessage(null);
-    try {
-      const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.order_number)}/proofs`, { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not issue the revised proof.");
-      setProofMessage({ ok: true, text: `Proof v${data.version} issued. The order is now at PROOF and the customer has been emailed.` });
-      await loadDetail();
-      onOrderChanged?.();
-    } catch (err: unknown) {
-      setProofMessage({ ok: false, text: err instanceof Error ? err.message : "Could not issue the revised proof." });
-    } finally {
-      setIsIssuingProof(false);
-    }
-  };
+  const actions = workflowActions(order);
+  const waiting = waitingFor(order);
 
   return (
     <div
@@ -73,7 +52,7 @@ export function OrderDetailPanel({ initialOrder, onClose, onOrderChanged }: Orde
       <div className="bg-white rounded-xl max-w-2xl w-full p-6 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[#FF5A1F]">
+            <span className="text-xs font-bold uppercase tracking-wider text-flame-600">
               Order Record
             </span>
             <h3 className="text-xl font-extrabold text-neutral-900">
@@ -136,6 +115,50 @@ export function OrderDetailPanel({ initialOrder, onClose, onOrderChanged }: Orde
             </div>
           </div>
 
+          {/* Workflow: open change request and the steps staff can take now (PRD § 08, § 11) */}
+          <div className="p-3 border border-neutral-200 rounded-lg space-y-3" data-testid="order-workflow">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-xs text-neutral-700">Workflow</span>
+              {waiting && <span className="text-[11px] text-neutral-500">{waiting}</span>}
+            </div>
+            {order.change_request && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900" data-testid="order-change-request">
+                <div className="font-semibold uppercase tracking-wide">
+                  Customer change request
+                  {order.change_requested_at && (
+                    <span className="font-normal normal-case tracking-normal text-amber-700">
+                      {" "}· {new Date(order.change_requested_at).toLocaleString("en-IN")}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-sm">{order.change_request}</p>
+              </div>
+            )}
+            {actions.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {actions.map((a) => (
+                  <Button
+                    key={a.id}
+                    size="sm"
+                    variant={a.primary ? "default" : "outline"}
+                    className="h-8 text-xs"
+                    disabled={!!a.disabledReason}
+                    title={a.disabledReason || a.description}
+                    onClick={() => onAction(order, a)}
+                    data-testid={`workflow-action-${a.id}`}
+                  >
+                    {a.label}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-500">No staff action needed at this stage.</p>
+            )}
+            {actions.some((a) => a.disabledReason) && (
+              <p className="text-[11px] text-neutral-500">{actions.find((a) => a.disabledReason)?.disabledReason}</p>
+            )}
+          </div>
+
           {/* Proof Approval Log */}
           <div className="p-3 border border-neutral-200 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -148,27 +171,6 @@ export function OrderDetailPanel({ initialOrder, onClose, onOrderChanged }: Orde
               Approved version:{" "}
               <span className="font-semibold">{order.approved_proof_version ? `v${order.approved_proof_version}` : "none yet"}</span>
             </div>
-            {/* Revised proofs are issued while the order is at ARTWORK (e.g. after a change request). */}
-            {order.pipeline_stage === "ARTWORK" && order.draft_id && (
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={handleIssueRevisedProof}
-                  disabled={isIssuingProof}
-                  data-testid="issue-revised-proof"
-                >
-                  {isIssuingProof ? "Issuing…" : "Issue revised proof"}
-                </Button>
-                <span className="text-[11px] text-neutral-500">Creates the next version from the current artwork and sends it to the customer.</span>
-              </div>
-            )}
-            {proofMessage && (
-              <div role={proofMessage.ok ? "status" : "alert"} className={`mt-2 text-xs ${proofMessage.ok ? "text-emerald-700" : "text-red-700"}`}>
-                {proofMessage.text}
-              </div>
-            )}
             <div className="mt-2 space-y-1.5" data-testid="proof-log">
               {(order.proofLog || []).length === 0 && (
                 <div className="text-xs text-neutral-500">No proofs issued yet.</div>

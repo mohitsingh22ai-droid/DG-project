@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
-import { updateOrderStageWithVersion } from "@/modules/orders/order-store";
+import { getOrderById, updateOrderStageWithVersion, validateStageTransition } from "@/modules/orders/order-store";
+import { checkManualStageChange } from "@/modules/orders/order-workflow";
 import { logAdminAction } from "@/modules/audit/audit-store";
 import { PipelineStage } from "@/types/database";
 
@@ -22,12 +23,41 @@ export async function PATCH(
       return NextResponse.json({ error: "Target stage is required." }, { status: 400 });
     }
 
+    // Workflow rules (PRD § 08, § 11), checked in this order: stale data, the stage
+    // graph, then what staff may do by hand (see order-workflow.ts).
+    const current = await getOrderById(id);
+    if (!current) {
+      return NextResponse.json({ error: `Order '${id}' not found.` }, { status: 404 });
+    }
+    if (expectedStage && current.pipeline_stage !== expectedStage) {
+      return NextResponse.json(
+        {
+          error: `Stale order stage conflict. Expected '${expectedStage}' but current stage is '${current.pipeline_stage}'. Please refresh.`,
+          conflict: true,
+          currentStage: current.pipeline_stage,
+        },
+        { status: 409 }
+      );
+    }
+    const transition = validateStageTransition(current.pipeline_stage, stage as PipelineStage);
+    if (!transition.valid) {
+      return NextResponse.json({ error: transition.error }, { status: 400 });
+    }
+    const manualRule = checkManualStageChange(current.pipeline_stage, stage as PipelineStage, typeof notes === "string" ? notes : undefined, {
+      changeRequested: !!current.change_request,
+    });
+    if (manualRule) {
+      return NextResponse.json({ error: manualRule }, { status: 400 });
+    }
+
     const result = await updateOrderStageWithVersion(
       id,
       stage as PipelineStage,
       expectedStage as PipelineStage | undefined,
       auth.user!.email,
-      notes
+      typeof notes === "string" && notes.trim() ? notes.trim() : undefined,
+      // Dispatch details are shared with the customer in the completion email.
+      stage === "COMPLETED" && typeof notes === "string" ? notes.trim() : undefined
     );
 
     if (result.conflict) {

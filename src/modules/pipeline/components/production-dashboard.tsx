@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { PipelineStage } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { TemplateManager } from "./template-manager";
 import { OrdersTab } from "./admin/orders-tab";
@@ -14,6 +13,8 @@ import { ReportsTab } from "./admin/reports-tab";
 import { ArchiveTab } from "./admin/archive-tab";
 import { OrderDetailPanel } from "./admin/order-detail-panel";
 import type { AdminOrder, Feedback } from "./admin/types";
+import { WorkflowDialog } from "./admin/workflow-dialog";
+import type { WorkflowAction } from "@/modules/orders/order-workflow";
 import { CheckCircle2, AlertCircle, BarChart3, Archive, Layers, Users, Settings, AlertTriangle, Ban, X } from "lucide-react";
 
 /**
@@ -46,6 +47,7 @@ export function ProductionDashboardView() {
   const [selectedDivision, setSelectedDivision] = useState<string>("ALL");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [changeRequestsOnly, setChangeRequestsOnly] = useState(false);
 
   // UI / Action Feedback
   const [feedbackMsg, setFeedbackMsg] = useState<Feedback | null>(null);
@@ -72,6 +74,7 @@ export function ProductionDashboardView() {
       if (selectedStage !== "ALL") params.set("stage", selectedStage);
       if (selectedPaymentStatus !== "ALL") params.set("payment_status", selectedPaymentStatus);
       if (selectedDivision !== "ALL") params.set("product_type", selectedDivision);
+      if (changeRequestsOnly) params.set("change_requested", "1");
       if (dateFrom) params.set("date_from", dateFrom);
       if (dateTo) params.set("date_to", dateTo);
       params.set("page", page.toString());
@@ -98,7 +101,7 @@ export function ProductionDashboardView() {
     } finally {
       setIsOrdersLoading(false);
     }
-  }, [searchQuery, selectedStage, selectedPaymentStatus, selectedDivision, dateFrom, dateTo, page]);
+  }, [searchQuery, selectedStage, selectedPaymentStatus, selectedDivision, dateFrom, dateTo, changeRequestsOnly, page]);
 
   useEffect(() => {
     if (role === "admin") {
@@ -106,50 +109,17 @@ export function ProductionDashboardView() {
     }
   }, [role, fetchOrders]);
 
-  // Advance / Retreat Pipeline Stage with Optimistic Locking (PRD § 11, § 13)
-  const handleUpdateStage = async (order: AdminOrder, targetStage: PipelineStage) => {
+  // Workflow steps (PRD § 08, § 11) run through a confirmation dialog; see workflow-dialog.tsx.
+  const [pendingAction, setPendingAction] = useState<{ order: AdminOrder; action: WorkflowAction } | null>(null);
+  const openAction = (order: AdminOrder, action: WorkflowAction) => {
     setFeedbackMsg(null);
-    try {
-      const res = await fetch(`/api/admin/orders/${order.order_number}/stage`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          stage: targetStage,
-          expectedStage: order.pipeline_stage,
-          notes: `Stage updated to ${targetStage} via Admin Console`,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (res.status === 409) {
-        setFeedbackMsg({
-          type: "conflict",
-          text: `Stale order stage conflict! Order ${order.order_number} was modified by another operator. Reloading latest state.`,
-        });
-        await fetchOrders();
-        return;
-      }
-
-      if (!res.ok) {
-        setFeedbackMsg({
-          type: "error",
-          text: data.error || `Could not transition stage to ${targetStage}`,
-        });
-        return;
-      }
-
-      setFeedbackMsg({
-        type: "success",
-        text: `Order ${order.order_number} transitioned to ${targetStage}. Customer notification email logged.`,
-      });
-      await fetchOrders();
-    } catch (err: unknown) {
-      setFeedbackMsg({
-        type: "error",
-        text: err instanceof Error ? err.message : "Network error updating stage",
-      });
-    }
+    setPendingAction({ order, action });
+  };
+  const finishAction = async (feedback: Feedback) => {
+    setPendingAction(null);
+    setSelectedOrderDetail(null);
+    setFeedbackMsg(feedback);
+    await fetchOrders();
   };
 
   // Download Production Files with Signed URL (PRD § 11, § 13)
@@ -196,7 +166,7 @@ export function ProductionDashboardView() {
           The production shop-floor console requires an authenticated administrator session. You are currently logged in as a {role}.
         </p>
         <Link href="/login?redirect=/production">
-          <Button className="bg-[#FF5A1F] hover:bg-[#E0480F] text-white">
+          <Button className="bg-flame-500 hover:bg-flame-600 text-white">
             Sign in as Administrator
           </Button>
         </Link>
@@ -348,7 +318,9 @@ export function ProductionDashboardView() {
           setSelectedDivision={setSelectedDivision}
           setPage={setPage}
           fetchOrders={fetchOrders}
-          onUpdateStage={handleUpdateStage}
+          changeRequestsOnly={changeRequestsOnly}
+          setChangeRequestsOnly={setChangeRequestsOnly}
+          onAction={openAction}
           onDownload={handleDownloadProduction}
           onOpenDetail={setSelectedOrderDetail}
         />
@@ -373,8 +345,17 @@ export function ProductionDashboardView() {
       {activeTab === "archive" && <ArchiveTab onDownload={handleDownloadProduction} />}
 
       {/* ORDER DETAIL MODAL (PRD § 11 Capability 02) */}
+      {pendingAction && (
+        <WorkflowDialog
+          order={pendingAction.order}
+          action={pendingAction.action}
+          onClose={() => setPendingAction(null)}
+          onDone={finishAction}
+        />
+      )}
+
       {selectedOrderDetail && (
-        <OrderDetailPanel initialOrder={selectedOrderDetail} onClose={() => setSelectedOrderDetail(null)} onOrderChanged={fetchOrders} />
+        <OrderDetailPanel initialOrder={selectedOrderDetail} onClose={() => setSelectedOrderDetail(null)} onAction={openAction} />
       )}
     </div>
   );

@@ -37,7 +37,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!order || !proof || proof.order_id !== order.order_number || !order.draft_id) {
       return NextResponse.json({ error: "Proof not found for this order" }, { status: 404 });
     }
-    if (sessionUser.role !== "admin" && order.customer_id !== sessionUser.id) {
+    // Only the order's customer decides on a proof; staff cannot approve or reject on their behalf.
+    if (order.customer_id !== sessionUser.id) {
       return NextResponse.json({ error: "Forbidden: You do not own this order's proof" }, { status: 403 });
     }
     if (order.pipeline_stage !== "PROOF") {

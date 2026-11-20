@@ -101,6 +101,9 @@ export interface Order {
   items?: OrderItem[];
   proof_status?: ProofStatus;
   approved_proof_version?: number;
+  /** Open customer change request awaiting a revised proof (PRD § 08). */
+  change_request?: string | null;
+  change_requested_at?: string | null;
   status_history?: Array<{
     from: PipelineStage;
     to: PipelineStage;
@@ -175,6 +178,8 @@ export interface Proof {
   /** Print specification of the job this proof belongs to, when known. */
   spec?: {
     productName?: string;
+    /** Used to reopen an unpaid job in the designer. */
+    productSlug?: string;
     widthMm: number;
     heightMm: number;
     bleedMm?: number;

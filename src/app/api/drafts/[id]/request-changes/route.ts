@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requestDraftProofChanges, calculateDraftPrice, getDraft, presentDraft } from "@/modules/drafts/draft-store";
-import { safeSendNotificationEmail } from "@/modules/email/email-service";
 import { authorizeDraft } from "@/lib/draft-access";
 
 const RequestChangesSchema = z.object({
   feedback: z.string().trim().min(1).max(2000).optional(),
 });
 
-/** The job's owner asks for a revised proof; a new version is opened for review. */
+/**
+ * Before payment (PRD § 06, § 08): the job's owner revises their own design. The
+ * current proof is marked "changes requested" with their note and the next version
+ * is opened for review. Paid orders use /api/orders/[id]/change-request instead,
+ * which goes to pre-press.
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -33,28 +37,8 @@ export async function POST(
     const updatedDraft = await requestDraftProofChanges(id, feedback, actor);
     const pricing = await calculateDraftPrice(updatedDraft);
 
-    const recipient = updatedDraft.customerEmail || access.actor.user?.email;
-    if (recipient) {
-      const recipientName = access.actor.user?.full_name || "Customer";
-      await safeSendNotificationEmail({
-        to: recipient,
-        recipientName,
-        event: "change_requested",
-        orderId: updatedDraft.id,
-        orderNumber: updatedDraft.id,
-        version: updatedDraft.proofVersion - 1,
-        feedback,
-      });
-      await safeSendNotificationEmail({
-        to: recipient,
-        recipientName,
-        event: "proof_ready",
-        orderId: updatedDraft.id,
-        orderNumber: updatedDraft.id,
-        version: updatedDraft.proofVersion,
-      });
-    }
-
+    // Before payment the customer revises their own design, so no email is sent:
+    // the new version and the reason are recorded in the job's proof history.
     return NextResponse.json({
       success: true,
       draft: await presentDraft(updatedDraft),

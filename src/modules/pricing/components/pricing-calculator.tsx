@@ -131,11 +131,11 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
         <CardHeader>
           <div className="flex items-center gap-2 text-xs font-mono font-semibold text-brand-500 uppercase">
             <Sliders className="w-3.5 h-3.5" />
-            <span>Interactive Parameter Matrix</span>
+            <span>Price calculator</span>
           </div>
-          <CardTitle className="text-2xl font-bold">Configure Your Job Specifications</CardTitle>
+          <CardTitle className="text-2xl font-bold">Choose your product, size and quantity</CardTitle>
           <CardDescription>
-            Change dimensions, materials, and volume to see instant mathematical price updates.
+            Your price updates as soon as you change anything.
           </CardDescription>
         </CardHeader>
 
@@ -215,7 +215,7 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
 
           {/* 3. Material Options */}
           <div className="space-y-2">
-            <Label>Material & Substrate</Label>
+            <Label>Material</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {selectedProduct.allowed_materials.map((mat) => {
                 const isSelected = mat.id === materialId;
@@ -318,10 +318,10 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
             <div className="flex items-center justify-between pb-3 border-b border-industrial-800">
               <div className="flex items-center gap-2 text-xs font-mono text-industrial-400">
                 <Tag className="w-3.5 h-3.5 text-brand-500" />
-                <span>INSTANT QUOTE MATRIX</span>
+                <span>YOUR PRICE</span>
               </div>
               <Badge variant="outline" className="border-industrial-700 text-[10px] text-emerald-400 font-mono">
-                GST-INCLUSIVE BREAKDOWN
+                INCLUDES GST
               </Badge>
             </div>
 
@@ -385,12 +385,12 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Preparing Configuration...
+                    Preparing…
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <Sparkles className="w-4 h-4" />
-                    Continue to In-Browser Designer
+                    Continue to design
                     <ArrowRight className="w-4 h-4" />
                   </span>
                 )}
@@ -403,12 +403,12 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
         <div className="p-4 rounded-xl border border-border bg-card text-xs space-y-2 font-mono">
           <div className="font-semibold text-foreground flex items-center gap-1.5">
             <Layers className="w-3.5 h-3.5 text-brand-500" />
-            <span>Manufacturing Print Specs:</span>
+            <span>Print details:</span>
           </div>
           <div className="text-muted-foreground space-y-1">
-            <div>• Target Bleed Margin: +{selectedProduct.default_bleed_mm}mm</div>
-            <div>• Inner Safe Margin: {selectedProduct.default_safety_margin_mm}mm</div>
-            <div>• Direct Output: 300 DPI Vector PDF with automated cut lines</div>
+            <div>• Edge allowance (bleed): +{selectedProduct.default_bleed_mm} mm</div>
+            <div>• Keep text {selectedProduct.default_safety_margin_mm} mm inside the edge</div>
+            <div>• Printed from a high-resolution file with exact cut lines</div>
           </div>
         </div>
       </div>

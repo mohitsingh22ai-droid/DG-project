@@ -49,7 +49,7 @@ export function ArchiveTab({ onDownload }: { onDownload: (order: AdminOrder) => 
       <CardContent>
         {isArchiveLoading ? (
           <div className="py-8 text-center text-neutral-500">
-            <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-[#FF5A1F]" />
+            <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-flame-600" />
             Loading archive...
           </div>
         ) : archiveOrders.length === 0 ? (

@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const product_type = searchParams.get("product_type") || searchParams.get("division") || undefined;
     const date_from = searchParams.get("date_from") || undefined;
     const date_to = searchParams.get("date_to") || undefined;
+    const change_requested = searchParams.get("change_requested") === "1";
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
 
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
       product_type,
       date_from,
       date_to,
+      change_requested,
       page,
       limit,
     });

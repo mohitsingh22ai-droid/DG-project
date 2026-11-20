@@ -170,18 +170,22 @@ test.describe("PHASE H: Admin Console & Security (PRD §03, §11, §13, §14, §
     const adminToken = await apiToken(request, TEST_USERS.admin);
     const headers = { Authorization: `Bearer ${adminToken}` };
 
-    // 1. Valid forward transition: ARTWORK -> PROOF on order W2P-2026-00302
-    const forwardRes = await request.patch("/api/admin/orders/W2P-2026-00302/stage", {
+    // 1. PROOF cannot be entered by a manual stage change (a proof must be sent) ...
+    const manualProofRes = await request.patch("/api/admin/orders/W2P-2026-00302/stage", {
       headers,
-      data: {
-        stage: "PROOF",
-        expectedStage: "ARTWORK",
-        notes: "Artwork pre-flight completed",
-      },
+      data: { stage: "PROOF", expectedStage: "ARTWORK", notes: "Artwork pre-flight completed" },
     });
-    expect(forwardRes.status()).toBe(200);
-    const forwardJson = await forwardRes.json();
-    expect(forwardJson.order.pipeline_stage).toBe("PROOF");
+    expect(manualProofRes.status()).toBe(400);
+    expect((await manualProofRes.json()).error).toContain("Send revised proof");
+
+    // ... so ARTWORK -> PROOF happens by sending a revised proof with a message
+    const forwardRes = await request.post("/api/admin/orders/W2P-2026-00302/proofs", {
+      headers,
+      data: { message: "Artwork pre-flight completed" },
+    });
+    expect(forwardRes.status()).toBe(201);
+    const forwardOrder = await (await request.get("/api/admin/orders/W2P-2026-00302", { headers })).json();
+    expect(forwardOrder.order.pipeline_stage).toBe("PROOF");
 
     // 2. Illegal forward skip: PROOF -> COMPLETED on order W2P-2026-00302 (must be rejected)
     const skipRes = await request.patch("/api/admin/orders/W2P-2026-00302/stage", {

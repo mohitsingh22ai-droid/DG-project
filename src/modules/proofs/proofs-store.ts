@@ -25,14 +25,14 @@ interface ProofRow {
   drafts: {
     customer_id: string | null;
     options: { widthMm?: number; heightMm?: number; bleedMm?: number; materialId?: string } | null;
-    products: { name: string; default_bleed_mm: number; allowed_materials: Array<{ id: string; name: string }> | null } | null;
+    products: { name: string; slug: string; default_bleed_mm: number; allowed_materials: Array<{ id: string; name: string }> | null } | null;
     orders: { order_number: string } | null;
   } | null;
 }
 
 // Each proof row joins its job (owner, print options), the product and, once paid, the order number.
 const PROOF_COLUMNS =
-  "*, drafts!inner(customer_id, options, products(name, default_bleed_mm, allowed_materials), orders:orders!drafts_order_fk(order_number))";
+  "*, drafts!inner(customer_id, options, products(name, slug, default_bleed_mm, allowed_materials), orders:orders!drafts_order_fk(order_number))";
 
 /** The real print specification of the job a proof belongs to (shown in the proof dialog). */
 function proofSpec(row: ProofRow): Proof["spec"] {
@@ -43,6 +43,7 @@ function proofSpec(row: ProofRow): Proof["spec"] {
   const material = materials.find((m) => m.id === options.materialId) ?? materials[0];
   return {
     productName: product?.name,
+    productSlug: product?.slug,
     widthMm: options.widthMm,
     heightMm: options.heightMm,
     bleedMm: options.bleedMm ?? product?.default_bleed_mm,

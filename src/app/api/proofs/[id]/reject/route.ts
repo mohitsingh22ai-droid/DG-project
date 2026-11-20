@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { safeSendNotificationEmail } from "@/modules/email/email-service";
 import { getAuthUser } from "@/lib/server-auth";
-import { getOrderById, updateOrderStageWithVersion, clearOrderApprovedProof } from "@/modules/orders/order-store";
+import { getOrderById, updateOrderStageWithVersion, clearOrderApprovedProof, setOrderChangeRequest } from "@/modules/orders/order-store";
 import { getProofById, getLatestProofForDraft, updateProof } from "@/modules/proofs/proofs-store";
 
 const RejectProofSchema = z.object({
@@ -34,7 +34,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!order || !proof || proof.order_id !== order.order_number || !order.draft_id) {
       return NextResponse.json({ error: "Proof not found for this order" }, { status: 404 });
     }
-    if (sessionUser.role !== "admin" && order.customer_id !== sessionUser.id) {
+    // Only the order's customer decides on a proof; staff cannot approve or reject on their behalf.
+    if (order.customer_id !== sessionUser.id) {
       return NextResponse.json({ error: "Forbidden: You do not own this order's proof" }, { status: 403 });
     }
     if (order.pipeline_stage !== "PROOF") {
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { feedback } = validated.data;
     await updateProof(id, { status: "changes_requested", customer_feedback: feedback });
     await clearOrderApprovedProof(order.id);
+    // Shown to pre-press in the admin console until they send the revised proof.
+    await setOrderChangeRequest(order.id, feedback);
 
     const moved = await updateOrderStageWithVersion(
       order.order_number,

@@ -55,7 +55,7 @@ function CheckoutContent() {
   const loadDraft = useCallback(
     async (placeOfSupply: string) => {
       if (!draftId) {
-        setGateError("No job selected. Configure a product and approve its proof before checkout.");
+        setGateError("No job selected. Choose a product and approve its proof before checkout.");
         setIsLoading(false);
         return;
       }
@@ -146,7 +146,7 @@ function CheckoutContent() {
               </Link>
             ) : (
               <Link href="/calculator">
-                <Button>Configure a product</Button>
+                <Button>Choose a product</Button>
               </Link>
             )}
           </CardContent>

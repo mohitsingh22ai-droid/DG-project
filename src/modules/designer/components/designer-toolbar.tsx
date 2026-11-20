@@ -112,10 +112,10 @@ export function DesignerToolbar({
       <div className="p-4 rounded-xl border bg-card shadow-subtle space-y-3 font-mono text-xs">
         <div className="flex items-center justify-between">
           <span className="font-semibold uppercase text-muted-foreground">
-            Print Zone Overlays
+            Print guides
           </span>
           <Badge variant="outline" className="text-[10px]">
-            TOLERANCE CONTROLS
+            SHOW OR HIDE
           </Badge>
         </div>
 

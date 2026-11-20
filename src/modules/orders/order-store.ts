@@ -67,6 +67,9 @@ interface OrderRow {
   total_paise: number;
   shipping_address: Order["shipping_address"];
   approved_proof_version: number | null;
+  /** Open customer change request (null when none or before the migration is applied). */
+  change_request?: string | null;
+  change_requested_at?: string | null;
   stripe_session_id: string | null;
   xero_invoice: Order["xero_invoice_data"] | null;
   notes: string | null;
@@ -118,6 +121,8 @@ function toOrder(row: OrderRow): Order {
     items: (row.order_items ?? []).map(toOrderItem),
     approved_proof_version: row.approved_proof_version ?? undefined,
     proof_version: row.approved_proof_version ?? undefined,
+    change_request: row.change_request ?? null,
+    change_requested_at: row.change_requested_at ?? null,
     status_history: [...(row.order_events ?? [])]
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
       .map((e) => ({
@@ -134,6 +139,29 @@ function toOrder(row: OrderRow): Order {
     draft_id: row.draft_id ?? undefined,
     created_at: row.created_at,
     updated_at: row.updated_at,
+  };
+}
+
+/**
+ * The customer's view of their own order. Internal details stay on the server:
+ * staff email addresses and internal notes in the stage history, the payment
+ * session id, the accounting (Xero) payload and internal order notes. Each history
+ * entry keeps only the stage change and its time, attributed to "You", "Payment"
+ * or "W2P team"; the dispatch note on completion is kept, since it is written for
+ * the customer (courier and tracking number) and emailed to them anyway.
+ */
+export function toCustomerOrder(order: Order, customerEmail: string): Order {
+  const { stripe_session_id: _session, xero_invoice_data: _xero, notes: _notes, ...rest } = order; // eslint-disable-line @typescript-eslint/no-unused-vars
+  return {
+    ...rest,
+    status_history: (order.status_history ?? []).map((h) => ({
+      from: h.from,
+      to: h.to,
+      timestamp: h.timestamp,
+      changed_by:
+        h.changed_by?.toLowerCase() === customerEmail.toLowerCase() ? "You" : h.changed_by === "stripe" ? "Payment" : "W2P team",
+      notes: h.to === "COMPLETED" && h.from === "PRODUCTION" ? h.notes : undefined,
+    })),
   };
 }
 
@@ -331,6 +359,8 @@ export async function searchAdminOrders(options: {
   product_type?: string;
   date_from?: string;
   date_to?: string;
+  /** Only orders with an open customer change request. */
+  change_requested?: boolean;
   page?: number;
   limit?: number;
 }): Promise<{
@@ -359,6 +389,7 @@ export async function searchAdminOrders(options: {
   if (options.product_type?.trim()) query = query.eq("division_slug", options.product_type.trim().toLowerCase());
   if (options.date_from && !isNaN(Date.parse(options.date_from))) query = query.gte("created_at", options.date_from);
   if (options.date_to && !isNaN(Date.parse(options.date_to))) query = query.lte("created_at", endOfDay(options.date_to));
+  if (options.change_requested) query = query.not("change_request", "is", null);
 
   const { data, count, error } = await query.order("created_at", { ascending: false }).range(offset, offset + limit - 1);
   if (error) throw new Error(`Search orders: ${error.message}`);
@@ -384,7 +415,9 @@ export async function updateOrderStageWithVersion(
   newStage: PipelineStage,
   expectedStage?: PipelineStage,
   actorEmail: string = "system",
-  notes?: string
+  notes?: string,
+  /** Staff note to include in the customer's email (only set by staff actions). */
+  customerNote?: string
 ): Promise<{ success: boolean; order?: Order; conflict?: boolean; error?: string; emailSent?: boolean; fromStage?: PipelineStage }> {
   const existing = await getOrderById(orderNumberOrId);
   if (!existing) return { success: false, error: `Order '${orderNumberOrId}' not found.` };
@@ -437,6 +470,8 @@ export async function updateOrderStageWithVersion(
     orderNumber: existing.order_number,
     stage: newStage,
     shippingAddress: existing.shipping_address,
+    // Staff note (e.g. dispatch details on completion), only when staff provided one.
+    feedback: customerNote,
   }).catch((err) => console.error("[OrderStore] Failed to send stage notification email:", err));
 
   return { success: true, order: (await getOrderById(existing.id))!, emailSent: true, fromStage };
@@ -533,5 +568,32 @@ export async function clearOrderApprovedProof(orderId: string): Promise<void> {
   unwrap(
     await db().from("orders").update({ approved_proof_version: null, approved_proof_sha256: null }).eq("id", orderId),
     "Clear approved proof"
+  );
+}
+
+/**
+ * Records the customer's open change request on an order (PRD § 08). Tolerates a
+ * database where the change-request migration has not been applied yet: the
+ * request is still logged in the order history by the caller.
+ */
+export async function setOrderChangeRequest(orderId: string, message: string): Promise<void> {
+  const { error } = await db()
+    .from("orders")
+    .update({ change_request: message, change_requested_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (error) console.warn("[orders] change request not stored (run migration 20261122000000):", error.message);
+}
+
+/** Closes the open change request once pre-press has sent the revised proof. */
+export async function clearOrderChangeRequest(orderId: string): Promise<void> {
+  const { error } = await db().from("orders").update({ change_request: null, change_requested_at: null }).eq("id", orderId);
+  if (error) console.warn("[orders] change request not cleared (run migration 20261122000000):", error.message);
+}
+
+/** Adds a note to the order history without changing its stage. */
+export async function logOrderNote(orderId: string, stage: PipelineStage, actorEmail: string, notes: string): Promise<void> {
+  unwrap(
+    await db().from("order_events").insert({ order_id: orderId, from_stage: stage, to_stage: stage, changed_by: actorEmail, notes }),
+    "Log order note"
   );
 }

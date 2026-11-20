@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { ProofRecord } from "../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,12 @@ interface ProofReviewDialogProps {
   onApprove: (proofId: string, approvedBy: string) => void;
   onRequestChanges: (proofId: string, feedback: string) => void;
   onClose: () => void;
+  /**
+   * Set for a proof of an unpaid job: the customer changes it themselves in the
+   * designer (PRD § 06), so the dialog offers "Edit my design" instead of a change
+   * request to pre-press, which applies only to paid orders.
+   */
+  editDesignHref?: string;
 }
 
 export function ProofReviewDialog({
@@ -25,6 +32,7 @@ export function ProofReviewDialog({
   onApprove,
   onRequestChanges,
   onClose,
+  editDesignHref,
 }: ProofReviewDialogProps) {
   const [feedback, setFeedback] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,14 +67,14 @@ export function ProofReviewDialog({
           <div>
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-500/20 text-brand-600 text-xs font-medium">
-                Digital Proofing
+                Proof
               </span>
               <span className="text-xs font-mono text-industrial-400">
                 REVISION v{proof.version}
               </span>
             </div>
             <h2 className="text-xl font-bold font-heading mt-1">
-              Production Artwork Inspection & Approval
+              Review your proof
             </h2>
           </div>
 
@@ -89,20 +97,13 @@ export function ProofReviewDialog({
               className="max-h-72 object-contain rounded shadow"
             />
 
-            {/* Repeating Diagonal Watermark (§ 08) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <span className="text-white/20 text-3xl font-mono font-extrabold uppercase tracking-widest rotate-[-20deg]">
-                W2P PROOF · v{proof.version}
-              </span>
-            </div>
-
             <div className="absolute top-3 left-3 flex gap-2">
               <Badge variant="industrial" className="text-xs">
-                v{proof.version} INSPECTION
+                Version {proof.version}
               </Badge>
               {proof.status === "approved" ? (
                 <Badge variant="success" className="text-xs">
-                  APPROVED FOR MANUFACTURE
+                  APPROVED
                 </Badge>
               ) : proof.status === "superseded" ? (
                 <Badge variant="outline" className="text-xs bg-white/80">
@@ -110,7 +111,7 @@ export function ProofReviewDialog({
                 </Badge>
               ) : proof.status === "changes_requested" ? (
                 <Badge variant="destructive" className="text-xs">
-                  REVISION PENDING
+                  CHANGES REQUESTED
                 </Badge>
               ) : (
                 <Badge variant="warning" className="text-xs animate-pulse">
@@ -129,7 +130,7 @@ export function ProofReviewDialog({
               </span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-[10px]">BLEED OVERPRINT</span>
+              <span className="text-muted-foreground block text-[10px]">EDGE ALLOWANCE</span>
               <span className="font-bold text-red-500">{proof.metadata.bleedMm !== undefined ? `+${proof.metadata.bleedMm}mm` : "—"}</span>
             </div>
             <div>
@@ -155,7 +156,7 @@ export function ProofReviewDialog({
                   <span>Request Artwork Revisions</span>
                 </div>
                 <Label htmlFor="rev-notes" className="text-xs text-muted-foreground">
-                  Specify required adjustments for the pre-press operator (text shifts, color tweaks, font size):
+                  What should we change? For example: move the logo up, change the date.
                 </Label>
                 <textarea
                   id="rev-notes"
@@ -203,14 +204,14 @@ export function ProofReviewDialog({
               <div>
                 <span className="font-bold block flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Formal Customer Sign-Off Verified
+                  You approved this proof
                 </span>
                 <span className="text-[11px] opacity-80">
                   Approved By: {proof.approvedBy} on {new Date(proof.approvedAt).toLocaleString("en-IN")}
                 </span>
               </div>
               <Badge variant="success" className="text-[10px]">
-                PRODUCTION READY
+                READY TO PRINT
               </Badge>
             </div>
           )}
@@ -224,19 +225,27 @@ export function ProofReviewDialog({
             onClick={onClose}
             className="text-xs font-mono"
           >
-            Close Viewer
+            Close
           </Button>
 
           {proof.status === "pending_review" && viewMode === "inspect" && (
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setViewMode("revise")}
-                className="text-xs font-mono text-destructive hover:bg-destructive/10 hover:border-destructive/40"
-              >
-                Request Changes
-              </Button>
+              {editDesignHref ? (
+                <Button asChild variant="outline" size="sm" className="text-xs">
+                  <Link href={editDesignHref} data-testid="proof-edit-design">
+                    Edit my design
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setViewMode("revise")}
+                  className="text-xs font-mono text-destructive hover:bg-destructive/10 hover:border-destructive/40"
+                >
+                  Request Changes
+                </Button>
+              )}
 
               <Button
                 size="sm"

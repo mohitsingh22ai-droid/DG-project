@@ -19,9 +19,9 @@ export function SavedDesignsTab({ savedDesigns }: { savedDesigns: SavedDesign[] 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold font-heading">Saved Custom Designs Library</h2>
+        <h2 className="text-xl font-bold font-heading">Saved designs</h2>
         <span className="text-xs font-mono text-muted-foreground">
-          Stored artwork assets ready for repeat manufacturing
+          Designs you saved, ready to order again
         </span>
       </div>
 
@@ -30,7 +30,7 @@ export function SavedDesignsTab({ savedDesigns }: { savedDesigns: SavedDesign[] 
           <BookmarkCheck className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
           <h3 className="font-heading font-bold text-base text-foreground mb-1">No Saved Designs in Library</h3>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-4">
-            Save artwork designs in the visual designer to reuse them anytime for instant 1-click reorders.
+            Save a design in the designer to reuse it anytime.
           </p>
           <Button asChild size="sm" className="text-xs font-semibold bg-brand-500 hover:bg-brand-600">
             <Link href="/designer/custom-die-cut-vinyl">Open Visual Designer</Link>

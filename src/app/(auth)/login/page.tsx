@@ -71,7 +71,7 @@ function LoginForm() {
           </span>
           <CardTitle className="text-2xl font-bold font-heading">Sign In to W2P</CardTitle>
           <CardDescription>
-            Enter your email and password to access your customer dashboard or factory production pipeline.
+            Sign in to see your orders, approve proofs and reorder.
           </CardDescription>
         </CardHeader>
 

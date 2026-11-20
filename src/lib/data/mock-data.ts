@@ -96,7 +96,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["square", "portrait", "landscape"],
     has_variable_data: false,
-    image_url: "/gallery/stickers.svg",
+    image_url: "/gallery/stickers.webp",
     is_active: true,
   },
   {
@@ -124,7 +124,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["BibNumber", "AthleteName", "Category", "EmergencyContact", "Barcode"],
-    image_url: "/gallery/race-bib.svg",
+    image_url: "/gallery/race-bib.webp",
     is_active: true,
   },
   {
@@ -152,7 +152,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["PlateNumber", "RiderName", "Team", "Class"],
-    image_url: "/gallery/mtb-board.svg",
+    image_url: "/gallery/mtb-board.webp",
     is_active: true,
   },
   {
@@ -180,7 +180,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["landscape", "square"],
     has_variable_data: false,
-    image_url: "/gallery/stamp.svg",
+    image_url: "/gallery/stamp.webp",
     is_active: true,
   },
   {
@@ -209,7 +209,7 @@ export const PRODUCTS: Product[] = [
     allowed_orientations: ["landscape"],
     has_variable_data: true,
     variable_data_sample_headers: ["RecipientName", "AwardTitle", "Date", "ClubName"],
-    image_url: "/gallery/trophy.svg",
+    image_url: "/gallery/trophy.webp",
     is_active: true,
   },
   {
@@ -237,7 +237,7 @@ export const PRODUCTS: Product[] = [
     ],
     allowed_orientations: ["square", "portrait", "landscape"],
     has_variable_data: false,
-    image_url: "/gallery/laser-cut.svg",
+    image_url: "/gallery/laser-cut.webp",
     is_active: true,
   },
 ];

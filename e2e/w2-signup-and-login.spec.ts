@@ -76,7 +76,7 @@ test.describe("W2. Signup & Login (PRD §09, §15, §16)", () => {
     // 4. Correct credentials for Admin -> redirects to /production
     await loginViaUi(page, TEST_USERS.admin, "/production", { fresh: true });
     expect(page.url()).toContain("/production");
-    await expect(page.locator("body")).toContainText("Production Pipeline");
+    await expect(page.locator("h1")).toContainText("Production");
   });
 
   test("PRD §03: Protected routes are strictly guarded after logout", async ({

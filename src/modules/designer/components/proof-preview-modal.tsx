@@ -47,10 +47,10 @@ export function ProofPreviewModal({
         <div className="p-4 sm:p-6 border-b flex items-center justify-between shrink-0">
           <div>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-600 text-xs font-medium">
-              Digital Proof Inspection
+              Your proof
             </span>
             <h3 className="text-lg sm:text-xl font-bold font-heading mt-1">
-              Digital Proof Approval Inspection
+              Check your proof before ordering
             </h3>
           </div>
           <button
@@ -93,10 +93,10 @@ export function ProofPreviewModal({
           </div>
 
           <div className="p-3 sm:p-4 rounded-lg bg-secondary/50 border text-xs font-mono space-y-1">
-            <div>• Verified Size: {widthMm}mm × {heightMm}mm</div>
-            <div>• High-Res Bleed: +{bleedMm}mm included</div>
-            <div>• Production Gate: Files unlock immediately upon proof approval</div>
-            <div>• Proof Version: v{currentProofVersion} (Pre-Press Asset)</div>
+            <div>• Size: {widthMm} × {heightMm} mm</div>
+            <div>• Edge allowance (bleed): +{bleedMm} mm</div>
+            <div>• Nothing is printed until you approve this proof</div>
+            <div>• Version {currentProofVersion}</div>
           </div>
         </div>
 
@@ -120,7 +120,7 @@ export function ProofPreviewModal({
             {isApproving ? (
               <span className="flex items-center gap-1.5">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Recording Approval...
+                Saving your approval…
               </span>
             ) : (
               <span className="flex items-center gap-1.5">

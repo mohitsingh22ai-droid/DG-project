@@ -50,7 +50,30 @@ function baseLayout(title: string, bodyContent: string): string {
 </html>`;
 }
 
+/** Escapes text for safe insertion into the HTML email body. */
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * Renders the email for an event. For proof, stage-change and completion emails a
+ * staff note (payload.feedback: e.g. "what changed" or dispatch details) is added
+ * as "A note from our team".
+ */
 export function renderEmail(payload: EmailPayload): RenderedTemplate {
+  const rendered = renderEmailBody(payload);
+  const note = payload.feedback?.trim();
+  if (!note || !["proof_ready", "pipeline_status_changed", "order_completed"].includes(payload.event)) return rendered;
+  const block = `<div class="highlight-box"><strong>A note from our team:</strong><br>${escapeHtml(note)}</div>`;
+  return {
+    subject: rendered.subject,
+    text: `${rendered.text}\n\nA note from our team:\n${note}`,
+    // Inside the content area, just before the footer.
+    html: rendered.html.replace('\n      </div>\n      <div class="footer">', `\n        ${block}\n      </div>\n      <div class="footer">`),
+  };
+}
+
+function renderEmailBody(payload: EmailPayload): RenderedTemplate {
   const customerName = payload.recipientName || "Valued Customer";
   const orderRef = payload.orderNumber || payload.orderId;
 

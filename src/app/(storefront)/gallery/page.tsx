@@ -1,90 +1,138 @@
-import { getAllDivisions, getAllProducts } from "@/modules/catalog/catalog-store";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowRight, Sliders } from "lucide-react";
+import { ArrowRight, Calculator, PenTool, ListOrdered } from "lucide-react";
+import { getAllDivisions, getAllProducts } from "@/modules/catalog/catalog-store";
+import { Button } from "@/components/ui/button";
+import { formatINR } from "@/modules/pricing/gst";
 
 export const metadata = {
-  title: "Live Work Gallery · W2P Print House",
-  description: "Real printed work organized across our six manufacturing divisions: labels, race bibs, MTB boards, stamps, trophies, and laser cutting.",
+  title: "Our Work Gallery · W2P Print House",
+  description: "Real print work from our six product ranges: labels, race bibs, MTB boards, stamps, trophies and laser-cut work.",
 };
 
 export const revalidate = 60;
 
-export default async function GalleryPage() {
-  const [DIVISIONS, PRODUCTS] = await Promise.all([getAllDivisions(), getAllProducts()]);
+/**
+ * Gallery of real work (PRD § 01, § 12), organised by product family. Each tile
+ * leads straight to designing or pricing that product; the chips filter by range
+ * (?range=<division slug>), so there is no detour back to the home page.
+ */
+export default async function GalleryPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
+  const [{ range }, divisions, products] = await Promise.all([searchParams, getAllDivisions(), getAllProducts()]);
+  const activeRange = divisions.some((d) => d.slug === range) ? range : undefined;
+  const shown = activeRange ? products.filter((p) => p.division_slug === activeRange) : products;
+  const divisionName = (slug: string) => divisions.find((d) => d.slug === slug)?.name ?? slug;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-      <div className="space-y-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-600 text-xs font-medium">
-          Production Gallery
-        </span>
-        <h1 className="text-3xl sm:text-4xl font-extrabold font-heading tracking-tight">
-          Physical Manufacturing Showcase
-        </h1>
-        <p className="text-muted-foreground text-sm max-w-2xl">
-          Browse real print outcomes produced in our commercial print house, grouped by manufacturing division.
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      <header className="space-y-2 max-w-2xl">
+        <h1 className="text-3xl sm:text-4xl font-heading font-semibold text-brand-800">Our Work Gallery</h1>
+        <p className="text-muted-foreground">
+          Real jobs from our print house. Pick one you like, then design your own or check the price for your size and quantity.
         </p>
+      </header>
+
+      {/* Filter by product range */}
+      <nav aria-label="Filter by product range" className="flex flex-wrap gap-2">
+        <Link
+          href="/gallery"
+          scroll={false}
+          aria-current={!activeRange ? "page" : undefined}
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+            !activeRange ? "bg-brand-700 border-brand-700 text-white" : "bg-card border-border text-foreground hover:border-brand-300"
+          }`}
+        >
+          All products
+        </Link>
+        {divisions.map((d) => (
+          <Link
+            key={d.slug}
+            href={`/gallery?range=${d.slug}`}
+            scroll={false}
+            aria-current={activeRange === d.slug ? "page" : undefined}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
+              activeRange === d.slug ? "bg-brand-700 border-brand-700 text-white" : "bg-card border-border text-foreground hover:border-brand-300"
+            }`}
+          >
+            {d.name}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Product tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {shown.map((prod) => (
+          <article
+            key={prod.id}
+            className="group flex flex-col rounded-2xl border border-border bg-card overflow-hidden shadow-glass hover-lift"
+            data-testid="gallery-card"
+          >
+            <Link href={`/designer/${prod.slug}`} className="block aspect-[4/3] bg-muted overflow-hidden" aria-label={`Start designing ${prod.name}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={prod.image_url}
+                alt={prod.name}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+            </Link>
+            <div className="flex flex-1 flex-col gap-3 p-5">
+              <div className="space-y-1">
+                <div className="text-xs font-semibold uppercase tracking-wider text-brand-600">{divisionName(prod.division_slug)}</div>
+                <h2 className="text-lg font-semibold text-foreground leading-snug">{prod.name}</h2>
+                <p className="text-sm text-muted-foreground line-clamp-2">{prod.subtitle}</p>
+              </div>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                  {prod.min_width_mm}–{prod.max_width_mm} mm wide
+                </span>
+                <span>{prod.allowed_materials.length} materials</span>
+                {prod.has_variable_data && (
+                  <span className="inline-flex items-center gap-1 text-brand-700">
+                    <ListOrdered className="w-3.5 h-3.5" aria-hidden="true" />
+                    Names &amp; numbers from a spreadsheet
+                  </span>
+                )}
+              </div>
+              <div className="mt-auto pt-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] text-muted-foreground">From</div>
+                  <div className="font-semibold text-foreground">{formatINR(prod.base_price_cents)} per piece</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/calculator?product=${prod.slug}`}>
+                      <Calculator className="w-3.5 h-3.5" aria-hidden="true" />
+                      See prices
+                    </Link>
+                  </Button>
+                  <Button asChild variant="cta" size="sm">
+                    <Link href={`/designer/${prod.slug}`}>
+                      <PenTool className="w-3.5 h-3.5" aria-hidden="true" />
+                      Start designing
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
 
-      {DIVISIONS.map((div) => {
-        const divisionProducts = PRODUCTS.filter((p) => p.division_slug === div.slug);
+      {shown.length === 0 && <p className="text-muted-foreground">No products in this range yet.</p>}
 
-        return (
-          <div key={div.id} className="space-y-4 pt-4 border-t border-border">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: div.accent_color }}
-                />
-                <h2 className="text-xl font-bold font-heading">{div.name}</h2>
-                <span className="text-xs font-mono text-muted-foreground hidden sm:inline">
-                  — {div.tagline}
-                </span>
-              </div>
-              <Button asChild variant="ghost" size="sm" className="text-xs font-medium">
-                <Link href="/#divisions">
-                  Configure on Homepage
-                  <ArrowRight className="w-3 h-3 ml-1" />
-                </Link>
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {divisionProducts.map((prod) => (
-                <Card key={prod.id} className="overflow-hidden group hover-lift" data-testid="gallery-card">
-                  <div className="aspect-[4/3] w-full overflow-hidden relative bg-muted">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={prod.image_url}
-                    loading="lazy"
-                    decoding="async"
-                      alt={prod.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                      <Button asChild size="sm" className="w-full text-xs font-semibold">
-                        <Link href={`/calculator?product=${prod.id}`}>
-                          <Sliders className="w-3.5 h-3.5 mr-1.5" />
-                          Calculate Price
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                  <CardContent className="p-4 space-y-1">
-                    <div className="text-[11px] font-mono text-brand-500 font-semibold">
-                      {prod.allowed_materials[0]?.name || "Standard Stock"}
-                    </div>
-                    <div className="font-bold text-sm text-foreground">{prod.name}</div>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{prod.subtitle}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        );
-      })}
+      <div className="rounded-2xl border border-border bg-card p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-foreground">Not sure what you need?</h2>
+          <p className="text-sm text-muted-foreground">Compare sizes, materials and bulk discounts before you design.</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/calculator">
+            Open the price calculator
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

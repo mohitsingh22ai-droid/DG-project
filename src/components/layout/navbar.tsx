@@ -6,12 +6,13 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Calculator, Kanban, LayoutGrid, Images, LayoutDashboard, Menu, X, LogOut, ChevronDown } from "lucide-react";
+import { Calculator, Kanban, LayoutGrid, Images, LayoutDashboard, Menu, X, LogOut, ChevronDown, ListOrdered } from "lucide-react";
 import { ProductMenu } from "./product-menu";
 
 // "Products" is a button that opens the product menu; these are plain links.
 const PUBLIC_LINKS = [
   { href: "/calculator", label: "Price calculator", icon: Calculator },
+  { href: "/variable-data", label: "Names & numbers", icon: ListOrdered },
   { href: "/gallery", label: "Gallery", icon: Images },
 ];
 

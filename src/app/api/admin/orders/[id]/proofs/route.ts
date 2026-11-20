@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
-import { getOrderById, updateOrderStageWithVersion, clearOrderApprovedProof } from "@/modules/orders/order-store";
+import { getOrderById, updateOrderStageWithVersion, clearOrderApprovedProof, clearOrderChangeRequest } from "@/modules/orders/order-store";
 import { getDraft, generateDraftProof } from "@/modules/drafts/draft-store";
 import { supersedeEarlierProofs } from "@/modules/proofs/proofs-store";
 import { logAdminAction } from "@/modules/audit/audit-store";
@@ -10,6 +10,11 @@ import { db, unwrap } from "@/lib/supabase/server";
 /**
  * Staff issue a revised proof (v+1) for a paid order from its current artwork and
  * move the order ARTWORK → PROOF so the customer can approve it (PRD § 08, § 11).
+ *
+ * Body (optional): { message } — what changed, saved in the order history and
+ * emailed to the customer. Issuing the proof closes the customer's open change
+ * request and clears cached production files, which are rebuilt from the new
+ * artwork once the customer approves.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(req);
@@ -17,6 +22,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     const { id } = await params;
+    const body = (await req.json().catch(() => ({}))) as { message?: unknown };
+    const message = typeof body?.message === "string" ? body.message.trim().slice(0, 1000) : "";
     const order = await getOrderById(id);
     if (!order) return NextResponse.json({ error: `Order '${id}' not found` }, { status: 404 });
     if (!order.draft_id) return NextResponse.json({ error: "This order has no job draft to proof." }, { status: 409 });
@@ -43,8 +50,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     await supersedeEarlierProofs(draft.id, nextVersion);
     // The customer must approve the revised proof before production can resume.
     await clearOrderApprovedProof(order.id);
+    await clearOrderChangeRequest(order.id);
+    // Files built from the previous artwork must never reach the press.
+    unwrap(await db().from("production_files").delete().eq("order_id", order.id), "Clear stale production files");
 
-    const moved = await updateOrderStageWithVersion(order.order_number, "PROOF", "ARTWORK", auth.user.email, `Revised proof v${nextVersion} issued`);
+    const moved = await updateOrderStageWithVersion(order.order_number, "PROOF", "ARTWORK", auth.user.email, message ? `Revised proof v${nextVersion} issued: ${message}` : `Revised proof v${nextVersion} issued`);
     if (!moved.success) {
       return NextResponse.json({ error: moved.error }, { status: moved.conflict ? 409 : 400 });
     }
@@ -61,6 +71,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       orderId: order.id,
       orderNumber: order.order_number,
       version: nextVersion,
+      feedback: message || undefined,
     });
 
     return NextResponse.json({ success: true, version: nextVersion, sha256: proof.sha256Hash }, { status: 201 });

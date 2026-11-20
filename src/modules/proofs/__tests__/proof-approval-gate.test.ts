@@ -21,12 +21,13 @@ describe("Watermarked visual proof (PRD § 08)", () => {
 
   it("labels the proof with its version and print geometry", () => {
     const svg = generateWatermarkedProofSvg(meta);
-    assert.ok(svg.includes("PROOF v1"));
+    assert.ok(svg.includes("Proof v1"));
+    assert.ok(!svg.includes("rotate("), "no diagonal watermark over the artwork");
     assert.ok(svg.includes("Trim 175×155 mm"));
     assert.ok(svg.includes("bleed 4 mm"));
   });
 
   it("shows the version it was generated for", () => {
-    assert.ok(generateWatermarkedProofSvg({ ...meta, version: 3 }).includes("PROOF v3"));
+    assert.ok(generateWatermarkedProofSvg({ ...meta, version: 3 }).includes("Proof v3"));
   });
 });

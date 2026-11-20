@@ -92,7 +92,7 @@ export function ProductsTab({ onFeedback }: { onFeedback: FeedbackHandler }) {
                     <Badge className="bg-neutral-100 text-neutral-800 text-[10px] uppercase">
                       {prod.division_slug}
                     </Badge>
-                    <span className="text-xs font-semibold text-[#FF5A1F]">
+                    <span className="text-xs font-semibold text-flame-600">
                       {formatINR(prod.base_price_cents)} base
                     </span>
                   </div>
@@ -256,7 +256,7 @@ export function ProductsTab({ onFeedback }: { onFeedback: FeedbackHandler }) {
                 <Button type="button" variant="outline" onClick={() => setEditingProduct(null)}>
                   Cancel
                 </Button>
-                <Button type="submit" data-testid="admin-save-product-btn" className="bg-[#FF5A1F] hover:bg-[#E0480F] text-white">
+                <Button type="submit" data-testid="admin-save-product-btn" className="bg-flame-500 hover:bg-flame-600 text-white">
                   Save & Apply Live
                 </Button>
               </div>

@@ -73,7 +73,9 @@ export function CustomerDashboardView() {
   };
 
   useEffect(() => {
-    if (user) {
+    // Staff have no customer orders; the shared APIs would return every customer's
+    // records to an admin, so the customer dashboard never loads them for one.
+    if (user && role !== "admin") {
       fetchCustomerData();
     }
   }, [user, role]);
@@ -194,11 +196,11 @@ export function CustomerDashboardView() {
           <User className="w-7 h-7" />
         </div>
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-600 text-xs font-medium">
-          Customer Portal Access
+          Your account
         </span>
-        <h2 className="text-2xl font-bold font-heading">Sign In to View Customer Portal</h2>
+        <h2 className="text-2xl font-bold font-heading">Sign in to see your orders</h2>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          The customer dashboard is strictly isolated. You must sign in to access your order history, review versioned proofs, and access 1-click reorders.
+          Track your orders, approve proofs and reorder in one click.
         </p>
         <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
           <Button asChild className="w-full sm:w-auto font-semibold text-xs">
@@ -208,6 +210,20 @@ export function CustomerDashboardView() {
             <Link href="/signup">Create New Account</Link>
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (role === "admin") {
+    return (
+      <div className="max-w-md mx-auto my-16 p-8 rounded-2xl border bg-card text-center space-y-4" data-testid="dashboard-admin-notice">
+        <h2 className="text-2xl font-bold font-heading">This is the customer area</h2>
+        <p className="text-sm text-muted-foreground">
+          You are signed in as staff. Orders, proofs and change requests from all customers are in the production console.
+        </p>
+        <Button asChild>
+          <Link href="/production">Open the production console</Link>
+        </Button>
       </div>
     );
   }
@@ -222,10 +238,10 @@ export function CustomerDashboardView() {
           <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <h3 className="font-bold text-base font-heading">
-              Payment Confirmed & Order #{checkoutSuccessOrder} Placed!
+              Thank you! Order {checkoutSuccessOrder} is confirmed
             </h3>
             <p className="text-xs text-muted-foreground leading-relaxed font-sans">
-              Your transactional single-order payment has been processed securely. The job has officially entered the <strong>ORDER</strong> stage in our production pipeline. A GST tax invoice is ready below.
+              Your payment went through and our team will check your artwork next. Your GST invoice is ready below.
             </p>
           </div>
         </div>
@@ -345,7 +361,7 @@ export function CustomerDashboardView() {
 
       {/* TAB 1: ORDER HISTORY & 1-CLICK REORDER (§ 10 Module 2 & 5) */}
       {activeTab === "orders" && (
-        <OrderHistoryTab orders={orders} reorderingOrder={reorderingOrder} handleReorder={handleReorder} />
+        <OrderHistoryTab orders={orders} reorderingOrder={reorderingOrder} handleReorder={handleReorder} onOrdersChanged={fetchCustomerData} />
       )}
 
       {/* TAB 2: ACTIVE PROOFS & VERSION CONTROL (§ 10 Module 4 & § 08) */}
@@ -392,6 +408,12 @@ export function CustomerDashboardView() {
             setTimeout(() => setReorderSuccess(null), 5000);
           }}
           onClose={() => setSelectedProofForReview(null)}
+          // Unpaid job (its "order id" is still the job id): the customer edits it in the designer.
+          editDesignHref={
+            UUID_PATTERN.test(selectedProofForReview.order_id) && selectedProofForReview.spec?.productSlug
+              ? `/designer/${selectedProofForReview.spec.productSlug}?draft=${selectedProofForReview.order_id}`
+              : undefined
+          }
         />
       )}
     </div>

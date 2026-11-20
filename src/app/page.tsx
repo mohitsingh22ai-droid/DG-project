@@ -1,9 +1,7 @@
-import { formatINR } from "@/modules/pricing/gst";
 import Link from "next/link";
 import { getAllDivisions, getAllProducts } from "@/modules/catalog/catalog-store";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowRight,
   Zap,
@@ -33,7 +31,7 @@ export default async function HomePage() {
                 <span className="block">Made Simple.</span>
               </h1>
               <p className="text-base sm:text-lg text-brand-100 leading-relaxed max-w-xl">
-                Design, configure and order high-quality print products, from labels and race numbers to stamps,
+                Design, price and order high-quality print products, from labels and race numbers to stamps,
                 trophies and laser-cut work. Live prices, proofs you approve, print-ready files.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-2">
@@ -94,7 +92,11 @@ export default async function HomePage() {
       <section id="divisions" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full scroll-mt-24">
         <div className="text-center mb-8">
           <h2 className="text-3xl sm:text-4xl font-heading font-semibold text-brand-800">Explore Our Print Range</h2>
-          <p className="text-sm text-muted-foreground mt-2">Six specialist divisions. Pick one to choose sizes, materials and quantities.</p>
+          <p className="text-sm text-muted-foreground mt-2">Six specialist ranges. Pick one to choose your size, material and quantity.</p>
+          <Link href="/gallery" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline mt-3">
+            See all products and our work
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -136,52 +138,50 @@ export default async function HomePage() {
             <div className="lg:col-span-7 space-y-4">
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-flame-50 text-flame-700 font-mono text-xs font-semibold">
                 <Zap className="w-3.5 h-3.5" />
-                <span>INSTANT FORMULA PRICING ENGINE</span>
+                <span>INSTANT PRICES</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-semibold font-heading tracking-tight text-brand-800">
-                Stop waiting for quotation emails. Configure dimensions and get live prices.
+                No quote forms, no waiting. Pick a size and see your price instantly.
               </h2>
               <p className="text-muted-foreground text-sm leading-relaxed max-w-xl">
-                Every product calculates dynamically based on millimetric area, material multipliers, and automatic volume discount thresholds starting from 50+ units. Full GST transparency included.
+                Your price updates as you change the size, material and quantity. Bulk discounts start from 50 pieces, and GST is always shown.
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
                 <Button asChild variant="cta" className="font-semibold">
                   <Link href="/calculator">
-                    Launch Interactive Calculator
+                    Open the price calculator
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
                 <Button asChild variant="industrial" className="border-industrial-700">
-                  <Link href="/divisions/race-event-numbers">
-                    Race & Event Numbers (CSV Merge)
-                  </Link>
+                  <Link href="/variable-data">Bulk names &amp; numbers</Link>
                 </Button>
               </div>
             </div>
 
             <div className="lg:col-span-5 bg-brand-800 text-white rounded-2xl p-5 font-mono text-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-brand-600 text-brand-200">
-                <span>FORMULA MATRIX</span>
+                <span>EXAMPLE PRICE</span>
                 <Badge variant="outline" className="text-[10px] text-flame-400 border-flame-400/40">
-                  REAL-TIME
+                  STICKERS
                 </Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-brand-200">Base Unit Rate:</span>
+                <span className="text-brand-200">Base price:</span>
                 <span className="text-white">₹4.00</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-brand-200">Area (75mm x 75mm):</span>
+                <span className="text-brand-200">Size 75 × 75 mm:</span>
                 <span className="text-white">56.3 cm² (+₹14.06)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-brand-200">Material (Gloss Vinyl):</span>
-                <span className="text-brand-200">1.0x (Standard)</span>
+                <span className="text-brand-200">Gloss vinyl:</span>
+                <span className="text-brand-200">Standard</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-brand-200">Volume Tier (250 units):</span>
-                <span className="text-flame-400">-30% Automated Discount</span>
+                <span className="text-brand-200">250 pieces:</span>
+                <span className="text-flame-400">30% bulk discount</span>
               </div>
               <div className="pt-2 border-t border-brand-600 flex justify-between font-bold text-sm">
                 <span className="text-white">Total (excl. GST):</span>
@@ -192,81 +192,17 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* REQUIRED SURFACE 3: GALLERY OF REAL WORK ORGANIZED BY PRODUCT FAMILY */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
-          <div>
-            <div className="text-xs font-semibold uppercase text-brand-600 dark:text-brand-600 tracking-wider">
-              Featured Production Work
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight font-heading mt-1 text-brand-800">
-              Live Showcase of Real Print Work
-            </h2>
-          </div>
-          <p className="text-sm text-muted-foreground max-w-md">
-            Finished physical outputs from our production floor across all six divisions.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {PRODUCTS.map((prod) => (
-            <Card key={prod.id} className="overflow-hidden group hover:border-brand-300 transition-colors">
-              <div className="aspect-[4/3] w-full overflow-hidden relative bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={prod.image_url}
-                    loading="lazy"
-                    decoding="async"
-                  alt={prod.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <Badge
-                  variant="industrial"
-                  className="absolute top-3 right-3 text-[10px] bg-card/90"
-                >
-                  {prod.division_slug.toUpperCase()}
-                </Badge>
-              </div>
-              <CardContent className="p-5">
-                <div className="text-xs font-mono text-muted-foreground mb-1">
-                  Min: {prod.min_width_mm}mm · Max: {prod.max_width_mm}mm
-                </div>
-                <h4 className="font-bold text-base font-heading group-hover:text-brand-500 transition-colors">
-                  {prod.name}
-                </h4>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {prod.subtitle}
-                </p>
-
-                <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
-                  <span className="font-mono text-xs font-semibold text-foreground">
-                    From {formatINR(prod.base_price_cents)} / unit
-                  </span>
-                  <Link
-                    href={`/calculator?product=${prod.slug}`}
-                    className="text-xs font-semibold text-brand-600 dark:text-brand-600 hover:underline flex items-center gap-1"
-                  >
-                    Customise & Price
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       {/* CORE OBJECTIVES VALUE PILLARS (§ 02) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full border-t border-border pt-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <Badge variant="outline" className="mb-2 font-mono text-[11px]">
-            THE PRODUCTION ADVANTAGE
+            WHY ORDER FROM US
           </Badge>
           <h2 className="text-3xl font-semibold font-heading tracking-tight text-brand-800">
-            Designed for the Workshop Floor
+            Print without the guesswork
           </h2>
           <p className="text-sm text-muted-foreground mt-2">
-            Why commercial print businesses need more than just an image upload button.
+            From your first idea to the parcel at your door.
           </p>
         </div>
 
@@ -275,9 +211,9 @@ export default async function HomePage() {
             <div className="w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-950/50 flex items-center justify-center text-brand-500 font-bold">
               <Sliders className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base font-heading">Constrained In-Browser Design</h3>
+            <h3 className="font-bold text-base font-heading">Designs that always print right</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Customers design artwork locked inside bleed, trim, and safety zones. Unprintable artwork is physically impossible to submit.
+              Our online designer keeps your text and images inside the print area, so nothing gets cut off.
             </p>
           </div>
 
@@ -285,9 +221,9 @@ export default async function HomePage() {
             <div className="w-10 h-10 rounded-lg bg-flame-50 flex items-center justify-center text-flame-600 font-bold">
               <FileCheck2 className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base font-heading">Versioned Proofs & Approval Gate</h3>
+            <h3 className="font-bold text-base font-heading">You approve before we print</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Every revision is logged (v1, v2). High-resolution print files stay strictly locked until the client formally approves the proof.
+              See a proof of exactly what will be printed. Ask for changes as often as you need; nothing is printed until you approve it.
             </p>
           </div>
 
@@ -295,9 +231,9 @@ export default async function HomePage() {
             <div className="w-10 h-10 rounded-lg bg-brand-50 flex items-center justify-center text-brand-700 font-bold">
               <Cpu className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-base font-heading">Server-Side 300 DPI & CSV Merge</h3>
+            <h3 className="font-bold text-base font-heading">Names and numbers in bulk</h3>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Automated high-res vector output and row-by-row variable data merges (numbers, athlete names, barcodes) generated server-side.
+              Upload a spreadsheet of names or race numbers and get a personalised bib, board or badge for every row.
             </p>
           </div>
         </div>

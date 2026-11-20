@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Papa from "papaparse";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -109,7 +108,7 @@ export function VariableDataUploader({
       link.click();
       document.body.removeChild(link);
 
-      setMergeStatus(`Success! Server compiled and downloaded a ${rows.length}-page 300 DPI batch PDF with crop marks.`);
+      setMergeStatus(`Success: your print file with ${rows.length} personalised pieces has downloaded.`);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Error executing merge";
       setMergeStatus(`Error: ${errorMsg}`);
@@ -124,17 +123,15 @@ export function VariableDataUploader({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-mono font-semibold text-brand-500 uppercase">
             <FileSpreadsheet className="w-4 h-4" />
-            <span>CSV Variable-Data Batch Engine</span>
+            <span>Spreadsheet upload</span>
           </div>
-          <Badge variant="industrial" className="text-[10px]">
-            SERVER-SIDE BATCH RIP
-          </Badge>
+          
         </div>
         <CardTitle className="text-xl font-bold font-heading">
-          Automated Variable Print Generation for {productName}
+          One personalised {productName} for every row
         </CardTitle>
         <CardDescription>
-          Upload attendee, athlete, or trophy recipient CSV data. The server automatically maps fields, scales long text, and compiles a single production-ready multi-page PDF.
+          Upload a spreadsheet saved as CSV (from Excel or Google Sheets: File → Download → .csv) with your names and numbers. Long names shrink to fit automatically.
         </CardDescription>
       </CardHeader>
 
@@ -144,7 +141,7 @@ export function VariableDataUploader({
           <div className="flex items-center gap-3">
             <label className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-xs font-semibold bg-industrial-950 text-white hover:bg-industrial-900 h-9 px-4 cursor-pointer shadow-sm transition-colors">
               <UploadCloud className="w-3.5 h-3.5 mr-1.5 text-brand-500" />
-              Upload Custom CSV
+              Upload spreadsheet (.csv)
               <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
             </label>
             <span className="text-xs font-mono text-muted-foreground">
@@ -163,14 +160,14 @@ export function VariableDataUploader({
             }}
             className="text-xs font-mono"
           >
-            Reset to Sample Marathon Bibs
+            Use sample list
           </Button>
         </div>
 
         {/* Column Mapping Selector (§ 07) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl border bg-card text-xs font-mono">
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-foreground">Big Number Column</Label>
+            <Label className="text-[11px] text-foreground">Number column</Label>
             <select
               value={numberCol}
               onChange={(e) => setNumberCol(e.target.value)}
@@ -185,7 +182,7 @@ export function VariableDataUploader({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-foreground">Name Placeholder (Auto-Fit)</Label>
+            <Label className="text-[11px] text-foreground">Name column (shrinks to fit)</Label>
             <select
               value={nameCol}
               onChange={(e) => setNameCol(e.target.value)}
@@ -200,7 +197,7 @@ export function VariableDataUploader({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[11px] text-foreground">Category / Team Column</Label>
+            <Label className="text-[11px] text-foreground">Category or team column</Label>
             <select
               value={subCol}
               onChange={(e) => setSubCol(e.target.value)}
@@ -218,8 +215,8 @@ export function VariableDataUploader({
         {/* Live Data Preview Table */}
         <div className="border rounded-xl overflow-hidden">
           <div className="bg-secondary/60 px-4 py-2 text-xs font-mono font-semibold text-muted-foreground flex justify-between">
-            <span>PARSED CSV DATA PREVIEW (FIRST 5 ROWS)</span>
-            <span>SHRINK-TO-FIT ACTIVE</span>
+            <span>PREVIEW (FIRST 5 ROWS)</span>
+            <span>LONG NAMES SHRINK TO FIT</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs font-mono">
@@ -271,12 +268,12 @@ export function VariableDataUploader({
             {isMerging ? (
               <span className="flex items-center gap-2">
                 <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                Compiling Multi-Page 300 DPI PDF on Server...
+                Creating your print file…
               </span>
             ) : (
               <span className="flex items-center gap-2">
                 <Download className="w-4 h-4" />
-                Execute Server-Side CSV Merge & Download Batch PDF ({rows.length} Pages)
+                Create print file ({rows.length} pieces)
               </span>
             )}
           </Button>

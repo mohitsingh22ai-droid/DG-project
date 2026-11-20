@@ -46,15 +46,15 @@ export function DivisionView({ division, products }: DivisionViewProps) {
         </div>
       </div>
 
-      {/* Parameter-driven Products List */}
+      {/* Products in this range */}
       <div>
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold font-heading">
-              Available Product Configurations
+              Products in this range
             </h2>
             <p className="text-xs font-mono text-muted-foreground mt-1">
-              Parameter-driven models — configure exact dimensions, materials, and quantities.
+              Choose your own size, material and quantity, then design online or upload your artwork.
             </p>
           </div>
         </div>
@@ -74,7 +74,7 @@ export function DivisionView({ division, products }: DivisionViewProps) {
                   />
                   {prod.has_variable_data && (
                     <Badge variant="default" className="absolute top-3 left-3 bg-blue-600 text-[10px] font-mono">
-                      CSV Variable Merge Ready
+                      Names &amp; numbers from a spreadsheet
                     </Badge>
                   )}
                 </div>
@@ -91,19 +91,19 @@ export function DivisionView({ division, products }: DivisionViewProps) {
 
                   <div className="p-3 rounded-lg bg-secondary/50 border text-xs font-mono space-y-1.5">
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Dimensions:</span>
+                      <span>Sizes:</span>
                       <span className="text-foreground font-semibold">
                         {prod.min_width_mm}–{prod.max_width_mm}mm W × {prod.min_height_mm}–{prod.max_height_mm}mm H
                       </span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Available Stocks:</span>
+                      <span>Materials:</span>
                       <span className="text-foreground font-semibold">
-                        {prod.allowed_materials.length} Materials
+                        {prod.allowed_materials.length} options
                       </span>
                     </div>
                     <div className="flex justify-between text-muted-foreground">
-                      <span>Bleed Margin:</span>
+                      <span>Edge allowance (bleed):</span>
                       <span className="text-foreground font-semibold">
                         +{prod.default_bleed_mm}mm
                       </span>
@@ -115,17 +115,22 @@ export function DivisionView({ division, products }: DivisionViewProps) {
               <div className="p-5 pt-0 mt-auto">
                 <div className="flex items-center justify-between pt-3 border-t">
                   <div>
-                    <span className="text-[10px] font-mono text-muted-foreground block">STARTING RATE</span>
+                    <span className="text-[10px] font-mono text-muted-foreground block">FROM</span>
                     <span className="font-mono font-bold text-sm text-foreground">
-                      {formatINR(prod.base_price_cents)} / unit
+                      {formatINR(prod.base_price_cents)} per piece
                     </span>
                   </div>
-                  <Button asChild size="sm" className="font-semibold">
-                    <Link href={`/calculator?product=${prod.id}`}>
-                      <Sliders className="w-3.5 h-3.5 mr-1.5" />
-                      Configure
-                    </Link>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/calculator?product=${prod.slug}`}>
+                        <Sliders className="w-3.5 h-3.5 mr-1.5" />
+                        See prices
+                      </Link>
+                    </Button>
+                    <Button asChild variant="cta" size="sm" className="font-semibold">
+                      <Link href={`/designer/${prod.slug}`}>Start designing</Link>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>

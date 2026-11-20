@@ -49,7 +49,7 @@ export function VariableDataAttach({ quantity, sampleHeaders = [], ensureDraftId
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <FileSpreadsheet className="w-4 h-4 text-brand-500" aria-hidden="true" />
-          Variable data (CSV)
+          Names & numbers (spreadsheet)
         </CardTitle>
         <CardDescription>
           One row per item ({quantity} rows for this job). Use column names in text, e.g.{" "}

@@ -93,9 +93,9 @@ export function DirectUploadView({ product, widthMm, heightMm, ensureDraftId, on
       <CardHeader>
         <div className="flex items-center gap-2 text-xs font-mono font-semibold text-brand-500 uppercase">
           <UploadCloud className="w-3.5 h-3.5" aria-hidden="true" />
-          <span>Direct Artwork File Upload</span>
+          <span>Upload artwork</span>
         </div>
-        <CardTitle className="text-xl font-bold font-heading">Upload Finished Print-Ready Artwork</CardTitle>
+        <CardTitle className="text-xl font-bold font-heading">Upload your own artwork</CardTitle>
         <CardDescription>
           Already have artwork from Illustrator, Photoshop or InDesign? Upload it for a {widthMm}mm × {heightMm}mm print.
         </CardDescription>

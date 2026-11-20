@@ -195,7 +195,7 @@ export function ProductMenu({ open, onClose }: { open: boolean; onClose: () => v
                     onClose={onClose}
                     image={p.imageUrl}
                     title={p.name}
-                    subtitle={`From ${formatINR(p.basePricePaise)} / unit · configure & price`}
+                    subtitle={`From ${formatINR(p.basePricePaise)} per piece · see prices`}
                   />
                 ))}
                 {!query &&

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrdersForUser } from "@/modules/orders/order-store";
+import { getOrdersForUser, toCustomerOrder } from "@/modules/orders/order-store";
 import { getAuthUser } from "@/lib/server-auth";
 
 /**
@@ -30,7 +30,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: customers can only list their own orders." }, { status: 403 });
     }
 
-    const orders = await getOrdersForUser(sessionUser.id, "customer");
+    // Customers get their own orders without internal details (staff, notes, payment ids).
+    const orders = (await getOrdersForUser(sessionUser.id, "customer")).map((o) => toCustomerOrder(o, sessionUser.email));
     return NextResponse.json({ orders });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Failed to retrieve orders";
