@@ -9,8 +9,11 @@ import { getUserById, StoredUser } from "@/modules/auth/users-store";
  * Identity comes ONLY from a verified Supabase session:
  *   1. `Authorization: Bearer <access token>` (API clients, future mobile app, tests)
  *   2. the Supabase auth cookies set by /api/auth/login
- * The token is verified with Supabase Auth; the role and active flag come from
- * public.profiles. Nothing in the request body or query string is trusted.
+ * The token's signature and expiry are verified with getClaims(): locally against
+ * the project's public signing keys when they are asymmetric (no network call),
+ * otherwise by asking Supabase Auth. The role and active flag always come from
+ * public.profiles, so a deactivated account is refused immediately. Nothing in the
+ * request body or query string is trusted.
  */
 export async function getAuthUser(req: NextRequest): Promise<StoredUser | null> {
   const userId = await resolveAuthUserId(req);
@@ -26,8 +29,7 @@ async function resolveAuthUserId(req: NextRequest): Promise<string | null> {
   if (authHeader?.toLowerCase().startsWith("bearer ")) {
     const token = authHeader.slice(7).trim();
     if (!token) return null;
-    const { data, error } = await db().auth.getUser(token);
-    return error || !data.user ? null : data.user.id;
+    return verifiedUserId(await db().auth.getClaims(token));
   }
 
   const supabase = createServerClient(
@@ -41,8 +43,13 @@ async function resolveAuthUserId(req: NextRequest): Promise<string | null> {
       },
     }
   );
-  const { data, error } = await supabase.auth.getUser();
-  return error || !data.user ? null : data.user.id;
+  return verifiedUserId(await supabase.auth.getClaims());
+}
+
+/** The user id (`sub`) from a verified token, or null when verification failed. */
+function verifiedUserId(result: { data: { claims?: { sub?: unknown } } | null; error: unknown }): string | null {
+  if (result.error || !result.data?.claims) return null;
+  return typeof result.data.claims.sub === "string" ? result.data.claims.sub : null;
 }
 
 type Guard =
@@ -97,9 +104,9 @@ export async function getPageUser(): Promise<StoredUser | null> {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll: () => cookieStore.getAll(), setAll: () => undefined } }
   );
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return null;
-  const user = await getUserById(data.user.id);
+  const userId = verifiedUserId(await supabase.auth.getClaims());
+  if (!userId) return null;
+  const user = await getUserById(userId);
   return user?.isActive ? user : null;
 }
 

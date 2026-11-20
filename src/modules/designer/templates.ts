@@ -34,18 +34,18 @@ const builtIn = (id: string, divisionSlug: string, name: string, elements: Templ
 /** Starter layouts that ship with the platform, one set per division. */
 export const BUILT_IN_TEMPLATES: DesignTemplate[] = [
   builtIn("tpl-sticker-badge", "labels-stickers", "Brand badge", [
-    R(0, 0, 1, 1, "#1F21A6", 24),
+    R(0, 0, 1, 1, "#17442E", 24),
     T("YOUR BRAND", 0.5, 0.32, 0.2, "#FFFFFF", { bold: true, font: "heading", align: "center" }),
-    T("HANDMADE IN DELHI", 0.5, 0.62, 0.09, "#C7CBFE", { font: "mono", align: "center" }),
+    T("HANDMADE IN DELHI", 0.5, 0.62, 0.09, "#B8D1BF", { font: "mono", align: "center" }),
   ]),
   builtIn("tpl-sticker-label", "labels-stickers", "Product label", [
     T("Product name", 0.04, 0.1, 0.18, "#111318", { bold: true, font: "heading" }),
     R(0.04, 0.38, 0.5, 0.02, "#FF5A1F"),
     T("Net wt. 250 g · Best before 06/2027", 0.04, 0.5, 0.08, "#444D5F", { font: "body" }),
-    T("www.yourbrand.in", 0.04, 0.78, 0.08, "#1F21A6", { font: "mono" }),
+    T("www.yourbrand.in", 0.04, 0.78, 0.08, "#17442E", { font: "mono" }),
   ]),
   builtIn("tpl-race-bib", "race-event-numbers", "Race bib", [
-    R(0, 0, 1, 0.2, "#2A2DC8"),
+    R(0, 0, 1, 0.2, "#1F5A3C"),
     T("EVENT NAME 2026", 0.5, 0.04, 0.1, "#FFFFFF", { bold: true, font: "heading", align: "center" }),
     T("{{number}}", 0.5, 0.28, 0.4, "#111318", { bold: true, font: "heading", align: "center" }),
     T("{{name}}", 0.5, 0.74, 0.1, "#111318", { bold: true, font: "heading", align: "center" }),
@@ -75,7 +75,7 @@ export const BUILT_IN_TEMPLATES: DesignTemplate[] = [
   ]),
   builtIn("tpl-laser-sign", "laser-cut", "Logo sign", [
     T("BRAND", 0.5, 0.2, 0.36, "#111318", { bold: true, font: "heading", align: "center" }),
-    T("TAGLINE GOES HERE", 0.5, 0.66, 0.12, "#2A2DC8", { font: "heading", align: "center" }),
+    T("TAGLINE GOES HERE", 0.5, 0.66, 0.12, "#1F5A3C", { font: "heading", align: "center" }),
   ]),
 ];
 

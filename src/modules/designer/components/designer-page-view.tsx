@@ -106,6 +106,8 @@ export function DesignerPageView({
   const [proofDataUrl, setProofDataUrl] = useState<string | null>(null);
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null);
   const [proofError, setProofError] = useState<string | null>(null);
+  // Instant snapshot of the canvas shown while the server renders the real proof.
+  const [quickPreview, setQuickPreview] = useState<string | null>(null);
   const [savedJsonNotice, setSavedJsonNotice] = useState<string | null>(null);
 
   // Compute print pixel bounds
@@ -292,6 +294,26 @@ export function DesignerPageView({
     return data.draft.id as string;
   };
 
+  /**
+   * Picture of the artwork as it is on screen, without selection handles or print
+   * guides. Shown only as a placeholder: the customer approves the server proof.
+   */
+  const snapshotCanvas = (): string | null => {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    const editorChrome = [...stage.find("Transformer"), ...stage.find(".guides-overlay-layer")];
+    const wasVisible = editorChrome.map((node) => node.visible());
+    try {
+      editorChrome.forEach((node) => node.visible(false));
+      // On phones the stage is shown scaled down; capture it at full design size.
+      return stage.toDataURL({ pixelRatio: 1 / (stage.scaleX() || 1) });
+    } catch {
+      return null; // e.g. a cross-origin image on the canvas
+    } finally {
+      editorChrome.forEach((node, i) => node.visible(wasVisible[i]));
+    }
+  };
+
   // Proof preview (§ 06, § 08): the server renders and stores the proof from the saved
   // artwork; the modal shows that stored proof, so what is approved is what is printed.
   const handleOpenProofModal = async () => {
@@ -300,6 +322,7 @@ export function DesignerPageView({
     setProofDataUrl(null);
     setArtworkPreview(null);
     setProofError(null);
+    setQuickPreview(mode === "designer" ? snapshotCanvas() : null);
     setProofModalOpen(true);
     try {
       const id = await ensureDraftId();
@@ -413,12 +436,12 @@ export function DesignerPageView({
         </div>
 
         {/* Path Switcher: Designer vs Direct File Upload */}
-        <div className="flex items-center gap-2 bg-industrial-900 p-1 rounded-lg border border-industrial-800">
+        <div className="grid grid-cols-2 sm:flex items-center gap-1 sm:gap-2 bg-industrial-900 p-1 rounded-lg border border-industrial-800 w-full sm:w-auto">
           <Button
             size="sm"
             variant={mode === "designer" ? "default" : "ghost"}
             onClick={() => setMode("designer")}
-            className="text-xs font-mono"
+            className="text-xs font-mono whitespace-normal h-auto min-h-9 py-2 leading-tight"
           >
             <Palette className="w-3.5 h-3.5 mr-1.5" />
             In-Browser Canvas
@@ -427,7 +450,7 @@ export function DesignerPageView({
             size="sm"
             variant={mode === "upload" ? "default" : "ghost"}
             onClick={() => setMode("upload")}
-            className="text-xs font-mono"
+            className="text-xs font-mono whitespace-normal h-auto min-h-9 py-2 leading-tight"
           >
             <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
             Direct File Upload
@@ -448,12 +471,12 @@ export function DesignerPageView({
           {/* Canvas Work Area (7 Cols) */}
           <div className="lg:col-span-7 space-y-4">
             <Card className="p-4 border-border shadow-elevation">
-              <div className="flex items-center justify-between pb-3 border-b text-xs font-mono text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b text-xs font-mono text-muted-foreground">
                 <span className="font-semibold text-foreground flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-brand-500" />
                   Visual Manufacturing Canvas
                 </span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {/* Editor-only "Show guides" toggle */}
                   <Button
                     variant={showGuides ? "secondary" : "outline"}
@@ -479,7 +502,7 @@ export function DesignerPageView({
                       ))}
                     </select>
                   )}
-                  <span>Scale: {bounds.scaleFactor.toFixed(2)} px/mm</span>
+                  <span className="hidden sm:inline">Scale: {bounds.scaleFactor.toFixed(2)} px/mm</span>
                 </div>
               </div>
 
@@ -516,9 +539,10 @@ export function DesignerPageView({
 
                 <div className="flex items-center gap-2">
                   <Button
+                    variant="cta"
                     size="sm"
                     onClick={handleOpenProofModal}
-                    className="font-semibold shadow-glow text-xs"
+                    className="font-semibold text-xs"
                   >
                     <Eye className="w-3.5 h-3.5 mr-1.5" />
                     Generate Proof & Preview
@@ -597,6 +621,7 @@ export function DesignerPageView({
           proofDataUrl={proofDataUrl}
           artworkPreview={artworkPreview}
           proofError={proofError}
+          quickPreview={quickPreview}
           currentProofVersion={currentProofVersion}
           widthMm={dimensions.widthMm}
           heightMm={dimensions.heightMm}

@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { safeRedirect } from "@/lib/safe-redirect";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,13 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Warm up the pages a user lands on after signing in, so the switch is instant.
+  useEffect(() => {
+    router.prefetch("/dashboard");
+    router.prefetch("/production");
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +46,6 @@ function SignupForm() {
       companyName: companyName.trim() || undefined,
       phone: phone.trim() || undefined,
     });
-    setIsSubmitting(false);
 
     if (res.success && res.user) {
       // Attach pending guest draft if any exists (§ 03)
@@ -62,12 +69,11 @@ function SignupForm() {
         console.warn("Could not attach draft on signup:", attachErr);
       }
 
-      if (redirectUrl) {
-        router.push(redirectUrl);
-      } else {
-        router.push("/dashboard");
-      }
+      // Leave the form busy until the next page has loaded (it unmounts this one).
+      setIsRedirecting(true);
+      router.replace(safeRedirect(redirectUrl) ?? "/dashboard");
     } else {
+      setIsSubmitting(false);
       setErrorMsg(res.error || "Failed to create account. Please try again.");
     }
   };
@@ -158,7 +164,7 @@ function SignupForm() {
               {isSubmitting ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  Creating Account...
+                  {isRedirecting ? "Signed in, opening…" : "Creating Account..."}
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-1.5">

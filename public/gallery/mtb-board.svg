@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-label="Downhill MTB number board">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF0FF"/><stop offset="1" stop-color="#DCE7DA"/></linearGradient>
-<filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1F21A6" flood-opacity=".22"/></filter></defs>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3EFE6"/><stop offset="1" stop-color="#DCE8DF"/></linearGradient>
+<filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#17442E" flood-opacity=".22"/></filter></defs>
 <rect width="800" height="560" fill="url(#bg)"/>
 <g filter="url(#sh)">
 <path d="M200 120 Q400 70 600 120 L620 400 Q400 470 180 400 Z" fill="#FFD400"/>
@@ -10,5 +10,5 @@
 <text x="400" y="395" text-anchor="middle" font-family="Helvetica,Arial" font-weight="800" font-size="24" fill="#111827" letter-spacing="2">KABIR KHAN · PRO</text>
 <g fill="#E5E7EB" stroke="#9CA3AF"><rect x="230" y="195" width="22" height="9" rx="4"/><rect x="548" y="195" width="22" height="9" rx="4"/><rect x="230" y="365" width="22" height="9" rx="4"/><rect x="548" y="365" width="22" height="9" rx="4"/></g>
 </g>
-<text x="400" y="525" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5D6482">Sample work · 0.8mm polypropylene, zip-tie slots, UV-resistant print</text>
+<text x="400" y="525" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5B6457">Sample work · 0.8mm polypropylene, zip-tie slots, UV-resistant print</text>
 </svg>

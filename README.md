@@ -74,3 +74,12 @@ npm run test:e2e:all      # Playwright: desktop, tablet, mobile
 Import the repository, add every variable from `.env.example` under Project → Settings →
 Environment Variables, set `NEXT_PUBLIC_APP_URL` to the deployment URL, and point a Stripe
 webhook at `/api/webhooks/stripe` (events listed in `.env.example`).
+
+### Performance: put the server next to the database
+
+Every API request talks to Supabase several times, so the distance between Vercel's
+server functions and the Supabase database matters more than anything else.
+In Supabase → **Project Settings → General**, note the project's **region**
+(e.g. `ap-south-1` Mumbai). In Vercel → **Project → Settings → Functions → Function Region**,
+pick the same or the nearest region (e.g. **Mumbai, India – bom1**) and redeploy.
+

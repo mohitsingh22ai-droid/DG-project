@@ -102,9 +102,10 @@ export async function PATCH(
       actor,
       parsed.data.action || "DRAFT_UPDATED"
     );
-    const pricing = await calculateDraftPrice(updated);
+    // Price and signed preview links are independent lookups.
+    const [pricing, presented] = await Promise.all([calculateDraftPrice(updated), presentDraft(updated)]);
 
-    return NextResponse.json({ draft: await presentDraft(updated), pricing });
+    return NextResponse.json({ draft: presented, pricing });
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : "Failed to update draft";
     return NextResponse.json({ error: errorMsg }, { status: 400 });

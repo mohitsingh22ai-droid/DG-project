@@ -32,18 +32,20 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // Validates the session with Supabase Auth and refreshes cookies if needed.
-  const { data } = await supabase.auth.getUser();
-  const user = data.user;
+  // Refreshes the session cookies when the access token has expired and verifies the
+  // token's signature locally (asymmetric signing keys), so most requests make no
+  // network call to Supabase Auth. API routes still authorise every request themselves.
+  const { data } = await supabase.auth.getClaims();
+  const userId = typeof data?.claims?.sub === "string" ? data.claims.sub : null;
 
   if (req.nextUrl.pathname.startsWith("/production")) {
-    if (!user) {
+    if (!userId) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("redirect", req.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    if (!(await isActiveAdmin(user.id))) {
+    if (!(await isActiveAdmin(userId))) {
       return NextResponse.rewrite(new URL("/forbidden", req.url), { status: 403 });
     }
   }

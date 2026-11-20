@@ -260,18 +260,21 @@ export async function updateDraft(
   const draft = await getDraft(draftId);
   if (!draft) throw new Error(`Draft ${draftId} not found`);
 
+  // The update and its audit event are independent writes, so they run together.
   const columns = toDraftColumns(updates);
-  if (Object.keys(columns).length > 0) {
-    unwrap(await db().from("drafts").update(columns).eq("id", draftId), "Update draft");
-  }
-  await logEvent(draftId, actor, actionLabel, draft.status, updates.status ?? draft.status, {
-    updates: Object.keys(updates),
-  });
+  await Promise.all([
+    Object.keys(columns).length > 0
+      ? db().from("drafts").update(columns).eq("id", draftId).then((res) => unwrap(res, "Update draft"))
+      : Promise.resolve(),
+    logEvent(draftId, actor, actionLabel, draft.status, updates.status ?? draft.status, {
+      updates: Object.keys(updates),
+    }),
+  ]);
 
   // (Re)render the proof for the current version when the draft enters review, or
   // when its artwork changes while under review, so the stored proof always shows
-  // the latest artwork.
-  const updated = (await getDraft(draftId))!;
+  // the latest artwork. The draft as just written is known here, so it is not re-read.
+  const updated: JobDraft = { ...draft, ...updates };
   const artworkChanged =
     updates.designJson !== undefined || updates.uploadedFileRef !== undefined || updates.csvFileRef !== undefined;
   const hasCurrentProof = updated.proofs.some((p) => p.version === updated.proofVersion);

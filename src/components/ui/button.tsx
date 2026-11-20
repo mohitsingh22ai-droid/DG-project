@@ -8,13 +8,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-brand-700 text-white hover:bg-brand-600 hover:-translate-y-px shadow-glow",
+        default: "bg-brand-700 text-white hover:bg-brand-800 hover:-translate-y-px shadow-glow",
+        // Orange: the single main action on a page (design, approve, pay).
+        cta: "bg-flame-500 text-white hover:bg-flame-600 hover:-translate-y-px shadow-glow",
         destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-sm",
-        outline: "border border-border bg-white/80 backdrop-blur hover:bg-white hover:border-brand-200 hover:text-brand-700 shadow-sm",
+        outline: "border border-border bg-card hover:bg-white hover:border-brand-300 hover:text-brand-700 shadow-sm",
         secondary: "bg-brand-50 text-brand-700 hover:bg-brand-100",
         ghost: "hover:bg-brand-50 hover:text-brand-700",
         link: "text-primary underline-offset-4 hover:underline",
-        industrial: "bg-white/80 text-foreground hover:bg-white border border-border shadow-sm",
+        industrial: "bg-card text-foreground hover:bg-white border border-border shadow-sm",
       },
       size: {
         default: "h-11 px-5",

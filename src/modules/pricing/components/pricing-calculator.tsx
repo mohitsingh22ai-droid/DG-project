@@ -59,6 +59,26 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
     });
   }, [selectedProduct, widthMm, heightMm, materialId, quantity]);
 
+  // "Quantity & Price" cards: the same pricing function, run for each preset quantity
+  // with the same (clamped) size and material as the live price above.
+  const QUANTITY_PRESETS = [25, 50, 100, 250, 500, 1000];
+  const presetPrices = useMemo(() => {
+    const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, Number.isFinite(v) ? v : min));
+    return QUANTITY_PRESETS.map((qty) => {
+      const p = calculatePrintPrice({
+        product: selectedProduct,
+        widthMm: clamp(widthMm, selectedProduct.min_width_mm, selectedProduct.max_width_mm),
+        heightMm: clamp(heightMm, selectedProduct.min_height_mm, selectedProduct.max_height_mm),
+        materialId: selectedProduct.allowed_materials.some((m) => m.id === materialId)
+          ? materialId
+          : selectedProduct.allowed_materials[0]?.id ?? materialId,
+        quantity: qty,
+      });
+      return { qty, subtotal: p.formatted.subtotal, unit: p.formatted.unitPrice, discount: p.discountPercentage };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProduct, widthMm, heightMm, materialId]);
+
   const configError = useMemo(
     () => validateConfiguration(selectedProduct, { widthMm, heightMm, materialId, quantity }),
     [selectedProduct, widthMm, heightMm, materialId, quantity]
@@ -229,39 +249,64 @@ export function PricingCalculator({ products: PRODUCTS }: { products: ExtendedPr
             </div>
           </div>
 
-          {/* 4. Quantity Stepper */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label>Quantity (Units)</Label>
-              <span className="text-xs font-mono text-brand-500 font-semibold">
-                {pricing.discountPercentage > 0 ? `${pricing.discountPercentage}% Volume Discount Applied` : "Standard Tier"}
+          {/* 4. Quantity & Price (PRD § 05: volume discounts shown up front) */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <Label className="text-base font-heading font-semibold text-brand-800">Quantity &amp; Price</Label>
+              <span className="text-xs font-semibold rounded-full bg-brand-50 text-brand-700 px-3 py-1">
+                {pricing.discountPercentage > 0 ? `${pricing.discountPercentage}% volume discount applied` : "Bigger quantity, bigger savings"}
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {[25, 50, 100, 250, 500, 1000].map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setQuantity(preset)}
-                  className={`flex-1 py-2 text-xs font-mono font-semibold rounded border transition-all ${
-                    quantity === preset
-                      ? "bg-industrial-950 text-white border-industrial-950"
-                      : "bg-secondary/60 text-foreground border-border hover:bg-secondary"
-                  }`}
-                >
-                  {preset}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {presetPrices.map((tier) => {
+                const selected = quantity === tier.qty;
+                return (
+                  <button
+                    key={tier.qty}
+                    type="button"
+                    onClick={() => setQuantity(tier.qty)}
+                    aria-pressed={selected}
+                    className={`relative rounded-xl border px-2 pt-4 pb-3 text-center transition-all ${
+                      selected
+                        ? "bg-brand-800 text-white border-brand-800 shadow-glow"
+                        : "bg-card text-foreground border-border hover:border-brand-300"
+                    }`}
+                  >
+                    {tier.discount > 0 && (
+                      <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${selected ? "bg-flame-500 text-white" : "bg-brand-50 text-brand-700"}`}>
+                        {tier.discount}% OFF
+                      </span>
+                    )}
+                    <span className="block font-heading text-xl font-semibold">{tier.qty}</span>
+                    <span className="block text-sm font-semibold mt-0.5">{tier.subtotal}</span>
+                    <span className={`block text-[11px] ${selected ? "text-brand-100" : "text-muted-foreground"}`}>{tier.unit} each</span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="pt-2">
+            <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              Or enter a custom quantity
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Button type="button" variant="outline" size="icon" aria-label="Decrease quantity" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
+                −
+              </Button>
               <Input
                 type="number"
                 min="1"
                 max="50000"
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                className="font-mono text-center font-bold text-base h-11"
+                className="font-mono text-center font-bold text-base h-11 max-w-[12rem]"
+                aria-label="Quantity"
               />
+              <Button type="button" variant="outline" size="icon" aria-label="Increase quantity" onClick={() => setQuantity((q) => Math.min(MAX_QUANTITY, q + 1))}>
+                +
+              </Button>
             </div>
+            <p className="text-[11px] text-muted-foreground text-center">Card prices exclude GST; the full breakdown is shown alongside.</p>
           </div>
         </CardContent>
       </Card>

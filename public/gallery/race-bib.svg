@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-label="Printed Tyvek race bib with number and name">
-<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0E3FF"/><stop offset="1" stop-color="#EEF0FF"/></linearGradient>
-<filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1F21A6" flood-opacity=".2"/></filter></defs>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6DFCF"/><stop offset="1" stop-color="#F3EFE6"/></linearGradient>
+<filter id="sh"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#17442E" flood-opacity=".2"/></filter></defs>
 <rect width="800" height="560" fill="url(#bg)"/>
 <g transform="rotate(-4 400 280)" filter="url(#sh)">
 <rect x="150" y="90" width="500" height="360" rx="10" fill="#FAFAF7"/>
 <circle cx="175" cy="115" r="8" fill="#E5E7EB"/><circle cx="625" cy="115" r="8" fill="#E5E7EB"/><circle cx="175" cy="425" r="8" fill="#E5E7EB"/><circle cx="625" cy="425" r="8" fill="#E5E7EB"/>
-<rect x="150" y="90" width="500" height="70" rx="10" fill="#2A2DC8"/><rect x="150" y="140" width="500" height="20" fill="#2A2DC8"/>
+<rect x="150" y="90" width="500" height="70" rx="10" fill="#1F5A3C"/><rect x="150" y="140" width="500" height="20" fill="#1F5A3C"/>
 <text x="400" y="135" text-anchor="middle" font-family="Helvetica,Arial" font-weight="800" font-size="30" fill="#fff" letter-spacing="2">DELHI HALF MARATHON 2026</text>
 <text x="400" y="320" text-anchor="middle" font-family="Helvetica,Arial" font-weight="900" font-size="170" fill="#111827">1042</text>
 <text x="400" y="372" text-anchor="middle" font-family="Helvetica,Arial" font-weight="700" font-size="30" fill="#111827" letter-spacing="2">PRIYA NAIR</text>
@@ -13,5 +13,5 @@
 <text x="180" y="430" font-family="Helvetica,Arial" font-weight="700" font-size="20" fill="#111827">21.1 KM · WOMEN 18-29</text>
 <g fill="#111827"><rect x="500" y="405" width="3" height="36"/><rect x="506" y="405" width="1.5" height="36"/><rect x="511" y="405" width="4" height="36"/><rect x="519" y="405" width="2" height="36"/><rect x="524" y="405" width="3" height="36"/><rect x="530" y="405" width="1.5" height="36"/><rect x="535" y="405" width="4" height="36"/><rect x="542" y="405" width="2" height="36"/><rect x="548" y="405" width="3" height="36"/><rect x="555" y="405" width="1.5" height="36"/><rect x="560" y="405" width="4" height="36"/><rect x="568" y="405" width="2" height="36"/><rect x="573" y="405" width="3" height="36"/><rect x="580" y="405" width="2" height="36"/><rect x="586" y="405" width="4" height="36"/><rect x="594" y="405" width="1.5" height="36"/><rect x="599" y="405" width="3" height="36"/><rect x="606" y="405" width="2" height="36"/><rect x="612" y="405" width="4" height="36"/></g>
 </g>
-<text x="400" y="535" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5D6482">Sample work · Tyvek 54gsm, number and name merged from CSV</text>
+<text x="400" y="535" text-anchor="middle" font-family="Helvetica,Arial" font-size="14" fill="#5B6457">Sample work · Tyvek 54gsm, number and name merged from CSV</text>
 </svg>

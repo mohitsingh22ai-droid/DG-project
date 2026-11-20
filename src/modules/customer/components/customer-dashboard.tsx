@@ -303,7 +303,7 @@ export function CustomerDashboardView() {
       <div className="flex gap-2 border-b border-border pb-2 text-sm font-semibold overflow-x-auto -mx-1 px-1" role="tablist">
         <button
           onClick={() => setActiveTab("orders")}
-          className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === "orders"
               ? "bg-industrial-950 text-white shadow-sm"
               : "text-muted-foreground hover:text-foreground"
@@ -316,7 +316,7 @@ export function CustomerDashboardView() {
 
         <button
           onClick={() => setActiveTab("proofs")}
-          className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === "proofs"
               ? "bg-industrial-950 text-white shadow-sm"
               : "text-muted-foreground hover:text-foreground"
@@ -331,7 +331,7 @@ export function CustomerDashboardView() {
 
         <button
           onClick={() => setActiveTab("designs")}
-          className={`px-4 py-2 rounded-md transition-colors flex items-center gap-2 ${
+          className={`px-3 sm:px-4 py-2 rounded-md transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 ${
             activeTab === "designs"
               ? "bg-industrial-950 text-white shadow-sm"
               : "text-muted-foreground hover:text-foreground"

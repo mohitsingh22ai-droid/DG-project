@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap");
+/* Web fonts are loaded from <head> in src/app/layout.tsx (preconnected, non-blocking chain). */
 
 @tailwind base;
 @tailwind components;
@@ -7,40 +7,39 @@
 @layer base {
   :root {
     --font-sans: "Inter", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    --font-heading: "Outfit", "Plus Jakarta Sans", sans-serif;
+    --font-heading: "Fraunces", Georgia, "Times New Roman", serif;
     --font-mono: "JetBrains Mono", monospace;
 
-    /* Modern High-Impact Tech Palette: Crisp clean base with royal cobalt & deep midnight */
-    --background: 230 40% 98%;
-    --foreground: 232 35% 12%;
+    /* Workshop palette: warm paper background, forest-green ink, orange for actions. */
+    --background: 40 33% 96%;
+    --foreground: 155 30% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 232 35% 12%;
+    --card: 40 40% 99%;
+    --card-foreground: 155 30% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 40 40% 99%;
+    --popover-foreground: 155 30% 12%;
 
-    /* Modern Royal Cobalt Blue (#2563EB) */
-    --primary: 239 76% 56%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 152 49% 18%;
+    --primary-foreground: 40 40% 98%;
 
-    --secondary: 232 60% 96%;
-    --secondary-foreground: 232 35% 18%;
+    --secondary: 140 20% 93%;
+    --secondary-foreground: 155 30% 16%;
 
-    --muted: 232 40% 96%;
-    --muted-foreground: 230 12% 45%;
+    --muted: 38 25% 92%;
+    --muted-foreground: 150 8% 38%;
 
-    --accent: 234 90% 96%;
-    --accent-foreground: 239 70% 40%;
+    --accent: 140 22% 92%;
+    --accent-foreground: 152 49% 18%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 230 30% 90%;
-    --input: 230 30% 88%;
-    --ring: 239 76% 56%;
+    --border: 38 20% 86%;
+    --input: 38 18% 82%;
+    --ring: 152 49% 24%;
 
-    --radius: 1rem;
+    --radius: 0.9rem;
   }
 
   .dark {
@@ -127,29 +126,25 @@ main > * {
 }
 
 /* ---------------------------------------------------------------------------
- * Glass design system: soft lavender canvas, translucent cards, hover lift.
+ * Surfaces: warm paper cards with soft shadows, hover lift.
  * ------------------------------------------------------------------------- */
 body {
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(124, 130, 248, 0.14), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(59, 63, 228, 0.08), transparent 55%),
-    hsl(var(--background));
-  background-attachment: fixed;
+  background: hsl(var(--background));
 }
 
 @layer components {
   .glass {
-    @apply bg-white/75 backdrop-blur-xl border border-white/70 shadow-glass;
+    @apply bg-card border border-border shadow-glass;
   }
   .glass-tint {
-    @apply bg-brand-50/70 backdrop-blur-xl border border-brand-100 shadow-glass;
+    @apply bg-brand-50 border border-brand-100 shadow-glass;
   }
   .hover-lift {
     @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-glass-hover;
   }
 }
 
-/* Former dark panels are light now: keep their text readable (buttons keep their own colours). */
+/* "Industrial" panels are light paper tones: keep their text readable (buttons keep their own colours). */
 .bg-industrial-950,
 .bg-industrial-900,
 .bg-industrial-850,
@@ -162,4 +157,9 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .hover-lift { transition: none; transform: none !important; }
+}
+
+/* The orange call-to-action button keeps the shared glow, tinted orange. */
+.shadow-glow.bg-flame-500 {
+  box-shadow: 0 10px 24px -10px rgba(226, 106, 28, 0.6);
 }

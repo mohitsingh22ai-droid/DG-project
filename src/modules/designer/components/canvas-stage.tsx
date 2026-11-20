@@ -115,6 +115,28 @@ export function CanvasStage({
 }: CanvasStageProps) {
   const trRef = useRef<Konva.Transformer>(null);
 
+  /*
+   * Mobile-first sizing: the design is laid out in fixed "design pixels"
+   * (bounds.*), and the whole stage is scaled down to fit the available width.
+   * Element coordinates, saved designs, proofs and print files are unaffected;
+   * only the on-screen size changes. Never scaled up beyond 1.
+   */
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewScale, setViewScale] = useState(1);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const update = () => {
+      const styles = window.getComputedStyle(el);
+      const inner = el.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+      setViewScale(inner > 0 ? Math.min(1, inner / bounds.bleedWidth) : 1);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [bounds.bleedWidth]);
+
   // Synchronize transformer selection
   useEffect(() => {
     if (!trRef.current || !stageRef.current) return;
@@ -158,11 +180,16 @@ export function CanvasStage({
   };
 
   return (
-    <div className="flex justify-center items-center p-4 bg-industrial-950/40 rounded-xl border border-industrial-800 shadow-inner overflow-hidden select-none">
+    <div
+      ref={containerRef}
+      className="flex justify-center items-center p-2 sm:p-4 bg-industrial-950/40 rounded-xl border border-industrial-800 shadow-inner overflow-hidden select-none"
+    >
       <Stage
         ref={stageRef}
-        width={bounds.bleedWidth}
-        height={bounds.bleedHeight}
+        width={bounds.bleedWidth * viewScale}
+        height={bounds.bleedHeight * viewScale}
+        scaleX={viewScale}
+        scaleY={viewScale}
         onMouseDown={checkDeselect}
         onTouchStart={checkDeselect}
         className="rounded shadow-elevation cursor-crosshair"
@@ -292,13 +319,16 @@ export function CanvasStage({
           <Transformer
             ref={trRef}
             boundBoxFunc={(oldBox, newBox) => {
-              if (newBox.width < 10 || newBox.height < 10) {
+              if (newBox.width < 10 * viewScale || newBox.height < 10 * viewScale) {
                 return oldBox;
               }
-              // Unrotated boxes may not grow past the safe area.
+              // Unrotated boxes may not grow past the safe area. The transformer
+              // reports on-screen pixels, so the safe area is scaled to match.
               if (!newBox.rotation) {
-                const sx = bounds.safeOffsetX, sy = bounds.safeOffsetY;
-                if (newBox.x < sx - 0.5 || newBox.y < sy - 0.5 || newBox.x + newBox.width > sx + bounds.safeWidth + 0.5 || newBox.y + newBox.height > sy + bounds.safeHeight + 0.5) {
+                const k = viewScale;
+                const sx = bounds.safeOffsetX * k, sy = bounds.safeOffsetY * k;
+                const sw = bounds.safeWidth * k, sh = bounds.safeHeight * k;
+                if (newBox.x < sx - 0.5 || newBox.y < sy - 0.5 || newBox.x + newBox.width > sx + sw + 0.5 || newBox.y + newBox.height > sy + sh + 0.5) {
                   return oldBox;
                 }
               }

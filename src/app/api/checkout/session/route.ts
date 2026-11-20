@@ -56,6 +56,13 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: "Please sign in to place your order." }, { status: 401 });
     }
+    // Staff accounts run the production console; orders are placed by customer accounts.
+    if (user.role === "admin") {
+      return NextResponse.json(
+        { error: "Admin accounts cannot place orders. Sign in with a customer account to order." },
+        { status: 403 }
+      );
+    }
 
     const draft = await getDraft(input.draftId);
     if (!draft) return NextResponse.json({ error: "Job not found" }, { status: 404 });

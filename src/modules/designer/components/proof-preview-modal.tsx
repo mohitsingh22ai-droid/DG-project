@@ -15,6 +15,8 @@ export interface ProofPreviewModalProps {
   /** Signed link to an uploaded PDF, shown alongside the proof. */
   artworkPreview: string | null;
   proofError: string | null;
+  /** On-screen snapshot shown while the server proof is still being rendered. */
+  quickPreview?: string | null;
   currentProofVersion: number;
   widthMm: number;
   heightMm: number;
@@ -29,6 +31,7 @@ export function ProofPreviewModal({
   proofDataUrl,
   artworkPreview,
   proofError,
+  quickPreview,
   currentProofVersion,
   widthMm,
   heightMm,
@@ -64,7 +67,17 @@ export function ProofPreviewModal({
             {proofError ? (
               <p role="alert" className="text-sm text-red-600 py-10">{proofError}</p>
             ) : !proofDataUrl ? (
-              <p role="status" className="text-sm text-muted-foreground py-10 animate-pulse">Rendering your proof…</p>
+              quickPreview ? (
+                <div className="relative w-full flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={quickPreview} alt="Your design (preview)" className="max-h-72 sm:max-h-96 object-contain rounded opacity-60" />
+                  <p role="status" className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/70 px-3 py-1 text-xs text-white animate-pulse">
+                    Preparing your print proof…
+                  </p>
+                </div>
+              ) : (
+                <p role="status" className="text-sm text-muted-foreground py-10 animate-pulse">Rendering your proof…</p>
+              )
             ) : artworkPreview ? (
               <div className="w-full space-y-2">
                 <object data={artworkPreview} type="application/pdf" className="w-full h-72 sm:h-96 rounded bg-white" aria-label="Uploaded artwork">
@@ -101,7 +114,8 @@ export function ProofPreviewModal({
             size="sm"
             onClick={onApprove}
             disabled={isApproving || !proofDataUrl}
-            className="font-semibold text-xs shadow-glow bg-emerald-600 hover:bg-emerald-700 text-white"
+            variant="cta"
+            className="font-semibold text-xs"
           >
             {isApproving ? (
               <span className="flex items-center gap-1.5">
