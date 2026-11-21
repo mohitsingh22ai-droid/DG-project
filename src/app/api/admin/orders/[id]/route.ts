@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/server-auth";
 import { getOrderById, checkReadyForProduction } from "@/modules/orders/order-store";
 import { getProofLogForDraft } from "@/modules/proofs/proofs-store";
+import { resolveStoredUrl } from "@/lib/storage";
 
 export async function GET(
   req: NextRequest,
@@ -21,7 +22,9 @@ export async function GET(
     }
 
     const gate = checkReadyForProduction(order);
-    const proofLog = order.draft_id ? await getProofLogForDraft(order.draft_id) : [];
+    // Proof previews are private files: give the console short-lived links it can open.
+    const rawLog = order.draft_id ? await getProofLogForDraft(order.draft_id) : [];
+    const proofLog = await Promise.all(rawLog.map(async (p) => ({ ...p, previewUrl: await resolveStoredUrl(p.previewUrl) })));
 
     return NextResponse.json({
       order: {
