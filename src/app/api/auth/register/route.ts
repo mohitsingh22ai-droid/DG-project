@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authClientForRoute } from "@/lib/supabase/server";
-import { registerCustomerUser, validatePasswordStrength } from "@/modules/auth/users-store";
+import { validatePasswordStrength, getUserById } from "@/modules/auth/users-store";
 import { toSafeUser } from "@/lib/server-auth";
+import { appOrigin } from "@/lib/app-url";
 
 const RegisterSchema = z.object({
   email: z.string().trim().email("A valid email address is required."),
@@ -12,6 +13,13 @@ const RegisterSchema = z.object({
   phone: z.string().trim().max(32).optional(),
 });
 
+/**
+ * Public signup. Supabase Auth creates the account and, when "Confirm email" is on in
+ * the Supabase dashboard, emails a confirmation link: the customer cannot sign in until
+ * they click it. If confirmation is switched off, Supabase returns a session and the
+ * customer is signed in straight away (same response as before).
+ * The role is always 'customer' (set by the on_auth_user_created trigger).
+ */
 export async function POST(req: NextRequest) {
   const parsed = RegisterSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
@@ -25,23 +33,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: passwordProblem }, { status: 400 });
   }
 
-  // Public signup always creates a customer; the role is set by the database.
-  const result = await registerCustomerUser(email, password, { fullName, companyName, phone });
-  if (!result.success || !result.user) {
-    const status = result.error?.includes("already exists") ? 409 : 400;
-    return NextResponse.json({ error: result.error || "Registration failed." }, { status });
-  }
-
-  // Sign the new customer in so the session cookies are set.
+  const normalisedEmail = email.toLowerCase();
   const response = NextResponse.json({});
   const supabase = authClientForRoute(req, response);
-  const { data, error } = await supabase.auth.signInWithPassword({ email: email.toLowerCase(), password });
-  if (error || !data.session) {
-    return NextResponse.json({ error: "Account created. Please sign in." }, { status: 201 });
+  const { data, error } = await supabase.auth.signUp({
+    email: normalisedEmail,
+    password,
+    options: {
+      data: { full_name: fullName, company_name: companyName || "", phone: phone || "" },
+      emailRedirectTo: `${appOrigin(req.nextUrl.origin)}/auth/confirmed`,
+    },
+  });
+
+  if (error) {
+    if (error.code === "user_already_exists" || /already (been )?registered|already exists/i.test(error.message)) {
+      return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+    }
+    if (error.status === 429 || error.code === "over_email_send_rate_limit" || /rate limit/i.test(error.message)) {
+      return NextResponse.json(
+        { error: "We can't send another email right now. Please wait a few minutes and try again." },
+        { status: 429 }
+      );
+    }
+    return NextResponse.json({ error: error.message || "Registration failed." }, { status: 400 });
   }
 
+  // With confirmation on, Supabase hides existing accounts: it returns a user with no identities.
+  if (!data.user || (data.user.identities && data.user.identities.length === 0)) {
+    return NextResponse.json({ error: "An account with this email already exists." }, { status: 409 });
+  }
+
+  // Confirmation required: the account exists but cannot sign in until the link is used.
+  if (!data.session) {
+    return NextResponse.json({ success: true, needsConfirmation: true, email: normalisedEmail }, { status: 201 });
+  }
+
+  // Confirmation switched off: the customer is already signed in.
+  const user = await getUserById(data.user.id);
+  if (!user) {
+    return NextResponse.json({ error: "Account created but profile is missing. Has the database migration been applied?" }, { status: 500 });
+  }
   return NextResponse.json(
-    { success: true, user: toSafeUser(result.user), token: data.session.access_token },
+    { success: true, user: toSafeUser(user), token: data.session.access_token },
     { status: 201, headers: response.headers }
   );
 }

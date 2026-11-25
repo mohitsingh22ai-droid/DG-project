@@ -8,8 +8,8 @@ interface AuthContextType {
   role: UserRole;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string; user?: Profile }>;
-  signUp: (email: string, pass: string, metadata: { fullName: string; companyName?: string; phone?: string }) => Promise<{ success: boolean; error?: string; user?: Profile }>;
+  signIn: (email: string, pass: string) => Promise<{ success: boolean; error?: string; code?: string; user?: Profile }>;
+  signUp: (email: string, pass: string, metadata: { fullName: string; companyName?: string; phone?: string }) => Promise<{ success: boolean; error?: string; user?: Profile; needsConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Server-Synchronized Sign In
-  const signIn = async (email: string, pass: string): Promise<{ success: boolean; error?: string; user?: Profile }> => {
+  const signIn = async (email: string, pass: string): Promise<{ success: boolean; error?: string; code?: string; user?: Profile }> => {
     setIsLoading(true);
 
     try {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok || !data.success) {
         setIsLoading(false);
-        return { success: false, error: data.error || "Invalid credentials." };
+        return { success: false, error: data.error || "Invalid credentials.", code: data.code };
       }
 
       setUser(data.user);
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     pass: string,
     metadata: { fullName: string; companyName?: string; phone?: string }
-  ): Promise<{ success: boolean; error?: string; user?: Profile }> => {
+  ): Promise<{ success: boolean; error?: string; user?: Profile; needsConfirmation?: boolean }> => {
     setIsLoading(true);
 
     try {
@@ -107,6 +107,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok || !data.success) {
         setIsLoading(false);
         return { success: false, error: data.error || "Registration error." };
+      }
+
+      // The account needs its email confirmed first, so there is no session yet.
+      if (data.needsConfirmation) {
+        setIsLoading(false);
+        return { success: true, needsConfirmation: true };
       }
 
       setUser(data.user);

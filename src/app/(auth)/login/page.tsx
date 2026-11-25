@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertCircle } from "lucide-react";
+import { ResendConfirmation } from "@/components/auth/resend-confirmation";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -20,11 +21,14 @@ function LoginForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  // True when sign-in was refused only because the email is not confirmed yet.
+  const [needsConfirm, setNeedsConfirm] = useState(false);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    setNeedsConfirm(false);
     setIsSubmitting(true);
 
     const res = await signIn(email.trim(), password);
@@ -58,6 +62,7 @@ function LoginForm() {
       window.location.assign(safeRedirect(redirectUrl) ?? (res.user?.role === "admin" ? "/production" : "/dashboard"));
     } else {
       setIsSubmitting(false);
+      setNeedsConfirm(res.code === "EMAIL_NOT_CONFIRMED");
       setErrorMsg(res.error || "Authentication failed. Please check your credentials.");
     }
   };
@@ -81,6 +86,12 @@ function LoginForm() {
               <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-mono flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {needsConfirm && (
+              <div className="rounded-lg border border-border bg-secondary/40 p-3">
+                <ResendConfirmation email={email.trim()} />
               </div>
             )}
 

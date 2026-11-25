@@ -132,8 +132,9 @@ export async function updateUserStatus(
  * Creates a customer account. The role is always 'customer' (set by the
  * on_auth_user_created trigger); it is never taken from the request.
  *
- * Accounts are created pre-confirmed: transactional email is in sandbox mode during
- * development, so a confirmation link could not reach real customers yet.
+ * Creates an already-confirmed account (no email link). Public signup does not use this:
+ * it goes through Supabase's own signUp so the customer must confirm their email.
+ * This remains for scripts and tests that need an account that can sign in immediately.
  */
 export async function registerCustomerUser(
   email: string,

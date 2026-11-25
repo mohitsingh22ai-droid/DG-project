@@ -16,8 +16,16 @@ test.describe("W2. Signup & Login (PRD §09, §15, §16)", () => {
     await page.fill("#password", "securePass123");
 
     await page.click('button[type="submit"]');
-    await page.waitForURL("**/dashboard", { timeout: 10000 });
-    expect(page.url()).toContain("/dashboard");
+
+    // With "Confirm email" on in Supabase the form asks the customer to check their inbox;
+    // with it off they are signed in and land on the dashboard.
+    const checkEmail = page.getByText("Check your email", { exact: true });
+    await Promise.race([checkEmail.waitFor({ timeout: 10000 }), page.waitForURL("**/dashboard", { timeout: 10000 })]);
+    if (!page.url().includes("/dashboard")) {
+      await expect(checkEmail).toBeVisible();
+      await expect(page.locator("body")).toContainText(uniqueEmail);
+      return;
+    }
 
     // Verify customer greeting on dashboard
     await expect(page.locator("body")).toContainText("Test Registrant");

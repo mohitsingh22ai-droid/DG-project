@@ -9,7 +9,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import { ArrowRight, AlertCircle, CheckCircle2, Mail } from "lucide-react";
+import { ResendConfirmation } from "@/components/auth/resend-confirmation";
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -23,6 +24,8 @@ function SignupForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  // Set once the account exists but its email still has to be confirmed.
+  const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,6 +43,13 @@ function SignupForm() {
       companyName: companyName.trim() || undefined,
       phone: phone.trim() || undefined,
     });
+
+    if (res.success && res.needsConfirmation) {
+      // No session yet. A job started as a guest is attached when they sign in after confirming.
+      setIsSubmitting(false);
+      setConfirmEmail(email.trim());
+      return;
+    }
 
     if (res.success && res.user) {
       // Attach pending guest draft if any exists (§ 03)
@@ -73,6 +83,35 @@ function SignupForm() {
       setErrorMsg(res.error || "Failed to create account. Please try again.");
     }
   };
+
+  if (confirmEmail) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 w-full">
+        <Card className="border-border shadow-elevation">
+          <CardHeader className="space-y-2">
+            <Mail className="w-8 h-8 text-brand-600" aria-hidden="true" />
+            <CardTitle className="text-2xl font-bold font-heading">Check your email</CardTitle>
+            <CardDescription>
+              We sent a confirmation link to <strong className="font-mono break-all">{confirmEmail}</strong>. Click it to finish creating your
+              account, then sign in. The email can take a minute; check your spam folder too.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ResendConfirmation email={confirmEmail} />
+            <p className="text-xs text-muted-foreground">
+              Wrong address? <button type="button" className="text-brand-500 font-semibold hover:underline" onClick={() => setConfirmEmail(null)}>Go back and change it</button>
+            </p>
+          </CardContent>
+          <CardFooter className="border-t pt-4 text-center justify-center text-xs text-muted-foreground bg-secondary/30">
+            Already confirmed?{" "}
+            <Link href="/login" className="text-brand-500 font-semibold hover:underline ml-1">
+              Sign in
+            </Link>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto px-4 py-16 w-full">

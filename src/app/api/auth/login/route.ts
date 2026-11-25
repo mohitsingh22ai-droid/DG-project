@@ -32,6 +32,13 @@ export async function POST(req: NextRequest) {
       { status: 429 }
     );
   }
+  // Supabase only reports this after the password was correct, so it reveals nothing to a guesser.
+  if (error && (error.code === "email_not_confirmed" || /email not confirmed/i.test(error.message))) {
+    return NextResponse.json(
+      { error: "Please confirm your email address first. Check your inbox for the link we sent.", code: "EMAIL_NOT_CONFIRMED" },
+      { status: 403 }
+    );
+  }
   if (error || !data.user || !data.session) {
     return NextResponse.json({ error: INVALID }, { status: 401 });
   }
